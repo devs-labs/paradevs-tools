@@ -1,4 +1,4 @@
-var Expression = require('./../lib/expression');
+var Expression = require('./../../../lib/expression');
 
 var Translator = function (model) {
 // public methods
