@@ -1,0 +1,8 @@
+{
+    "name": "paradevs-tools",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "jison": "^0.4.15"
+    }
+}

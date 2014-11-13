@@ -1,0 +1,52 @@
+name : MyModel;
+
+parameters : {
+  RH_init : < R+ > = 10.0,
+  in_flow : < R* > = 10.0,
+  out_flow : < R+* > = 5.0
+}
+
+in_ports: { in }
+
+out_ports: { out }
+
+state: {
+  RH = < R+ >,
+  Phase = { Wait, Send }
+}
+
+init: {
+  RH = RH_init;
+  Phase = Wait;
+}
+
+delta_int: {
+  (RH, Phase) -> (RH + in_flow - out_flow, Phase) [RH + in_flow - out_flow > 0],
+  (RH, Phase) -> (0, Phase) [RH + in_flow - out_flow < 0]
+}
+
+delta_ext: {
+  (((RH, Phase), t_e), {in1, in2}) -> (RH + qty, Phase),
+  (((RH, Phase), t_e), {(in,{qty})}) -> (RH + qty, Phase),
+  (((RH, Phase), t_e), {(in,{ab, cd})}) -> (RH + qty, Phase),
+  (((RH, Phase), t_e), {(in1,{ef, gh}), (in2,{ij, kl})}) -> (RH + qty, Phase)
+}
+
+delta_conf: {
+  ((RH, Phase), {in}) -> (RH, Phase)
+}
+
+ta: {
+  (RH, Phase) -> 1 [x1 = 0 and (y1 <> 0 or not(z1<0))]
+}
+
+output: {
+  (RH, Phase) -> {out1, out2},
+  (RH, Phase) -> {(out, {(RH,RH)})},
+  (RH, Phase) -> {(out, {(ab,ab),(cd,cd)})},
+  (RH, Phase) -> {(out1, {(ab,ab),(cd,cd)}), (out2, {(ab,ab),(cd,cd)})}
+}
+
+translate: {
+
+}
