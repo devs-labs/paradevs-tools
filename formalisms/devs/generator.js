@@ -127,8 +127,8 @@ exports.grammar = {
         ],
         "symbol": ["ID"],
         "section_init": ["SECTION_INIT : { initial_assignments }"],
-        "initial_assignments": ["initial_assignments initial_assignment", "initial_assignment"],
-        "initial_assignment": [["variable_name = value ;", "yy.model.init_state_variable($1, $3);"]],
+        "initial_assignments": ["initial_assignments , initial_assignment", "initial_assignment", ""],
+        "initial_assignment": [["variable_name = value", "yy.model.init_state_variable($1, $3);"]],
         "value": [
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],

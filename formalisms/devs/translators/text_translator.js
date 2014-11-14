@@ -224,7 +224,8 @@ var Translator = function (model) {
     var translate_parameters = function (parameter) {
         _code += parameter.name() + '(';
         translate_type(parameter.type().type());
-        _code += ')=' + parameter.value();
+        _code += ')=';
+        translate_arithmetic_expression(parameter.value());
     };
 
     var translate_ports = function (type, ports) {
@@ -325,7 +326,7 @@ var Translator = function (model) {
                 } else {
                     if (type.charAt(1) === '+') {
                         _code += String.fromCharCode(0x208a) + String.fromCharCode(0x22c6);
-                    } else if (_type.charAt(1) === '-') {
+                    } else if (type.charAt(1) === '-') {
                         _code += String.fromCharCode(0x208b) + String.fromCharCode(0x22c6);
                     }
                 }

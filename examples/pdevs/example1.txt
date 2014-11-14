@@ -23,8 +23,8 @@ state: {
 }
 
 init: {
-  RH = RH_init;
-  Phase = Wait;
+  RH = RH_init,
+  Phase = Wait
 }
 
 delta_int: {

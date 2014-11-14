@@ -139,7 +139,7 @@ var AtomicModel = function (name) {
     };
 
     this.add_parameter = function (name, type, value) {
-        _parameters.push(new Parameter(name, type, value));
+        _parameters.push(new Model.Parameter(name, type, value));
     };
 
     this.add_state_variable = function (name, type) {

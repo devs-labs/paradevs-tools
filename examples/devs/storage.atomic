@@ -1,0 +1,37 @@
+name : Storage;
+
+parameters : {
+  response_time : < R+ > = 10.0
+}
+
+in_ports: { in = { <R> } }
+
+out_ports: { out = { <R> } }
+
+state: {
+  phase = { passive, respond },
+  sigma = < R+ >,
+  store = < R >
+}
+
+init: {
+  phase = passive,
+  sigma = +inf,
+  store = 0
+}
+
+delta_int: {
+  (phase, sigma, store) -> (passive, +inf, store) [phase = respond]
+}
+
+delta_ext: {
+  (((phase, sigma, store), t_e), {(in,{x_})}) -> (passive, sigma - t_e, x_) [phase = passive and x_ = 0],
+  (((phase, sigma, store), t_e), {(in,{x_})}) -> (respond, response_time, store) [phase = passive and x_ <> 0],
+  (((phase, sigma, store), t_e), {(in,{x_})}) -> (passive, sigma - t_e, store) [phase = respond]
+}
+
+ta: {
+  (phase, sigma, store) -> sigma
+}
+
+output: { }
