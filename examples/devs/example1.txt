@@ -1,0 +1,29 @@
+name : MyModel;
+
+parameters : { }
+
+in_ports: { in }
+
+out_ports: { out }
+
+state: {
+  Phase = { passive }
+}
+
+init: {
+  Phase = passive;
+}
+
+delta_int: {
+  (Phase) -> (passive) [Phase = passive]
+}
+
+delta_ext: {
+  (((Phase), t_e), {in}) -> (passive) [Phase = passive]
+}
+
+ta: {
+  (Phase) -> +inf [Phase = passive]
+}
+
+output: { }

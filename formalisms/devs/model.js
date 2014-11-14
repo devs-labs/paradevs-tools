@@ -275,10 +275,6 @@ var OutputFunction = function (state, bag, condition) {
 
 var Model = function (name) {
 // public methods
-    this.add_delta_conf_function = function (state, bag, expression, condition) {
-        _delta_conf_functions.push(new DeltaConfFunction(state, bag, expression, condition));
-    };
-
     this.add_delta_ext_function = function (state, e, bag, expression, condition) {
         _delta_ext_functions.push(new DeltaExtFunction(state, e, bag, expression, condition));
     };
@@ -313,10 +309,6 @@ var Model = function (name) {
 
     this.add_ta_function = function (state, expression, condition) {
         _ta_functions.push(new TaFunction(state, expression, condition));
-    };
-
-    this.delta_conf_functions = function () {
-        return _delta_conf_functions;
     };
 
     this.delta_ext_functions = function () {
@@ -371,7 +363,6 @@ var Model = function (name) {
         _in_ports = [];
         _out_ports = [];
         _state = new State();
-        _delta_conf_functions = [];
         _delta_ext_functions = [];
         _delta_int_functions = [];
         _ta_functions = [];
@@ -387,7 +378,6 @@ var Model = function (name) {
     var _state;
     var _delta_int_functions;
     var _delta_ext_functions;
-    var _delta_conf_functions;
     var _ta_functions;
     var _output_functions;
 

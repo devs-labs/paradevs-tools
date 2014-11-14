@@ -46,7 +46,3 @@ output: {
   (RH, Phase) -> {(out, {(ab,ab),(cd,cd)})},
   (RH, Phase) -> {(out1, {(ab,ab),(cd,cd)}), (out2, {(ab,ab),(cd,cd)})}
 }
-
-translate: {
-
-}

@@ -18,7 +18,6 @@ exports.grammar = {
             ["state\\b", "return 'SECTION_STATE';"],
             ["delta_int\\b", "return 'SECTION_DELTA_INT';"],
             ["delta_ext\\b", "return 'SECTION_DELTA_EXT';"],
-            ["delta_conf\\b", "return 'SECTION_DELTA_CONF';"],
             ["ta\\b", "return 'SECTION_TA';"],
             ["output\\b", "return 'SECTION_OUTPUT';"],
             ["init\\b", "return 'SECTION_INIT';"],
@@ -86,7 +85,7 @@ exports.grammar = {
     "OR AND NOT <> < > <= >=",
     "start": "model",
     "bnf": {
-        "model": [["section_name section_parameters section_in_ports section_out_ports section_state section_init section_delta_int section_delta_ext section_delta_conf section_ta section_output", "return yy.model"]],
+        "model": [["section_name section_parameters section_in_ports section_out_ports section_state section_init section_delta_int section_delta_ext section_ta section_output", "return yy.model"]],
         "section_name": [["SECTION_NAME : ID ;", "yy.model = new yy.Model.Model($3);"]],
         "section_parameters": ["SECTION_PARAMETERS : { parameter_assignments }"],
         "parameter_assignments": ["parameter_assignments , parameter_assignment", "parameter_assignment", ""],
@@ -155,12 +154,6 @@ exports.grammar = {
             ["attribute", "$$=[$1];"]
         ],
         "attribute": ["ID"],
-        "section_delta_conf": ["SECTION_DELTA_CONF : { delta_conf_functions }"],
-        "delta_conf_functions": ["delta_conf_functions , delta_conf_function", "delta_conf_function", ""],
-        "delta_conf_function": [
-            ["( ( state_variables ) , bag ) -> ( arithmetic_expressions ) condition", "yy.model.add_delta_conf_function($3, $6, $10, $12);"],
-            ["( ( state_variables ) , bag ) -> ( arithmetic_expressions )", "yy.model.add_delta_conf_function($3, $6, $10, null);"]
-        ],
         "section_ta": ["SECTION_TA : { ta_list }"],
         "ta_list": ["ta_list , ta", "ta"],
         "ta": [

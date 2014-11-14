@@ -202,7 +202,7 @@ var Translator = function (model) {
         for (var i = 0; i < _model.state().state_variables().length; ++i) {
             var variable = _model.state().state_variables()[i];
 
-            _code += '    ' + variable.name() + ' = ' + variable.init() + ';\n';
+            _code += '    ' + variable.name() + ' = ' + translate_arithmetic_expression(variable.init()) + ';\n';
         }
     };
 

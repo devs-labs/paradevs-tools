@@ -4,9 +4,12 @@ exports.main = function main() {
 
     parser.yy.Model = require('./formalisms/' + process.argv[2] + '/model');
     parser.yy.Expression = require('./lib/expression');
-    parser.yy.Translator = require('./formalisms/' + process.argv[2] + '/translators/' + process.argv[3] + '_translator');
-    parser.yy.model = null;
-    parser.parse(source);
+    var result = parser.parse(source);
+
+    var Translator = require('./formalisms/' + process.argv[2] + '/translators/' + process.argv[3] + '_translator');
+    var translator = new Translator(result);
+    translator.translate();
+    console.log(translator.code());
 };
 
 if (require.main === module)
