@@ -130,12 +130,12 @@ var AtomicModel = function (name) {
         _delta_int_functions.push(new DeltaIntFunction(state, expression, condition));
     };
 
-    this.add_in_port = function (name) {
-        _in_ports.push(name);
+    this.add_in_port = function (name, types) {
+        _in_ports.push(new Model.Port(name, types));
     };
 
-    this.add_out_port = function (name) {
-        _out_ports.push(name);
+    this.add_out_port = function (name, types) {
+        _out_ports.push(new Model.Port(name, types));
     };
 
     this.add_output_function = function (state, bag, condition) {

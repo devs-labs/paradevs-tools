@@ -14,16 +14,8 @@ var Translator = function (model) {
             }
         }
         _code += ' }\n';
-        _code += 'X = { ';
-        for (i = 0; i < _model.in_ports().length; ++i) {
-            _code += _model.in_ports()[i] + ' ';
-        }
-        _code += '}\n';
-        _code += 'Y = { ';
-        for (i = 0; i < _model.out_ports().length; ++i) {
-            _code += _model.out_ports()[i] + ' ';
-        }
-        _code += '}\n';
+        translate_ports('X', _model.in_ports());
+        translate_ports('Y', _model.out_ports());
         translate_state(_model.state());
         for (i = 0; i < _model.ta_functions().length; ++i) {
             translate_ta(_model.ta_functions()[i]);
@@ -233,6 +225,32 @@ var Translator = function (model) {
         _code += parameter.name() + '(';
         translate_type(parameter.type().type());
         _code += ')=' + parameter.value();
+    };
+
+    var translate_ports = function (type, ports) {
+        var port;
+        var n = ports.length;
+
+        _code += type + ' = { ';
+        for (var i = 0; i < n; ++i) {
+            port = ports[i];
+            _code += '( ';
+            _code += port.name();
+            if (port.types().length > 0) {
+                _code += ', ';
+                for (var j = 0; j < port.types().length; ++j) {
+                    translate_type(port.types()[i].type());
+                    if (j !== port.types().length - 1) {
+                        _code += 'x';
+                    }
+                }
+            }
+            _code += ' )';
+            if (i !== n - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
     };
 
     var translate_state = function (state) {

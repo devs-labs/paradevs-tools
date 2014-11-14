@@ -246,7 +246,8 @@ var Translator = function (model) {
         for (var i = 0; i < _model.parameters().length; ++i) {
             var variable = _model.parameters()[i];
 
-            if (variable.type().type() === 'R' || variable.type().type() === 'R+' || variable.type().type() === 'R-' ||
+            if (variable.type().type() === 'R' || variable.type().type() === 'R*' ||
+                variable.type().type() === 'R+' || variable.type().type() === 'R-' ||
                 variable.type().type() === 'R+*' || variable.type().type() === 'R-*') {
                 _code += '  double ' + variable.name() + ';\n';
             } else if (variable.type().type() === 'N' || variable.type().type() === 'Z') {
@@ -261,7 +262,7 @@ var Translator = function (model) {
         for (var i = 0; i < _model.parameters().length; ++i) {
             var variable = _model.parameters()[i];
 
-            _code += '    ' + variable.name() + ' = ' + variable.value() + ';\n';
+            _code += '    ' + variable.name() + ' = ' + translate_arithmetic_expression(variable.value()) + ';\n';
         }
     };
 

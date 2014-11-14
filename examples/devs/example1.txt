@@ -2,9 +2,9 @@ name : MyModel;
 
 parameters : { }
 
-in_ports: { in }
+in_ports: { in = {} }
 
-out_ports: { out }
+out_ports: { out = {} }
 
 state: {
   Phase = { passive }

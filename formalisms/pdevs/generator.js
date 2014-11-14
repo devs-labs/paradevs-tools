@@ -93,13 +93,23 @@ exports.grammar = {
         "parameter_assignment": [["variable_name : variable_def = value", "yy.model.add_parameter($1, $3, $5);"]],
         "section_in_ports": ["SECTION_IN_PORTS : { in_ports }"],
         "in_ports": ["in_ports , in_port", "in_port", ""],
-        "in_port": [["ID", "yy.model.add_in_port($1);"]],
+        "in_port": [
+            ["ID = { variable_defs }", "yy.model.add_in_port($1, $4);"],
+            ["ID = { }", "yy.model.add_in_port($1, []);"]
+        ],
         "section_out_ports": ["SECTION_OUT_PORTS : { out_ports }"],
         "out_ports": ["out_ports , out_port", "out_port", ""],
-        "out_port": [["ID", "yy.model.add_out_port($1);"]],
+        "out_port": [
+            ["ID = { variable_defs }", "yy.model.add_out_port($1, $4);"],
+            ["ID = { }", "yy.model.add_out_port($1, []);"]
+        ],
         "section_state": ["SECTION_STATE : { variables }"],
         "variables": ["variables , variable", "variable"],
         "variable": [["variable_name = variable_def", "yy.model.add_state_variable($1, $3);"]],
+        "variable_defs": [
+            ["variable_defs , variable_def", "$$ = $1; $1.push($3);"],
+            ["variable_def", "$$ = [$1];"]
+        ],
         "variable_def": [
             ["{ symbols }", "$$=$2"],
             ["< R >", "$$='R';"],

@@ -6,9 +6,16 @@ parameters : {
   out_flow : < R+* > = 5.0
 }
 
-in_ports: { in }
+in_ports: {
+  in = {},
+  in1 = {< R+ >},
+  in2 = {< R+ >, < R+ >}
+}
 
-out_ports: { out }
+out_ports: {
+  out = {},
+  out1 = {< R+ >, < N >}
+}
 
 state: {
   RH = < R+ >,
@@ -28,8 +35,8 @@ delta_int: {
 delta_ext: {
   (((RH, Phase), t_e), {in1, in2}) -> (RH + qty, Phase),
   (((RH, Phase), t_e), {(in,{qty})}) -> (RH + qty, Phase),
-  (((RH, Phase), t_e), {(in,{ab, cd})}) -> (RH + qty, Phase),
-  (((RH, Phase), t_e), {(in1,{ef, gh}), (in2,{ij, kl})}) -> (RH + qty, Phase)
+  (((RH, Phase), t_e), {(in1,{ab, cd})}) -> (RH + qty, Phase),
+  (((RH, Phase), t_e), {(in1,{ab, cd}), (in2,{ij, kl})}) -> (RH + qty, Phase)
 }
 
 delta_conf: {
