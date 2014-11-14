@@ -1,162 +1,5 @@
-//var Condition = require('./lib/condition');
 var Expression = require('./../../lib/expression');
-
-var Type = function (type) {
-// public methods
-    this.is_set = function () {
-        return typeof _type !== 'string';
-    };
-
-    this.type = function () {
-        return _type;
-    };
-
-// private attributes
-    var _type = type;
-};
-
-var Parameter = function (name, type, value) {
-// public methods
-    this.name = function () {
-        return _name;
-    };
-
-    this.type = function () {
-        return _type;
-    };
-
-    this.value = function () {
-        return _value;
-    };
-
-// private attributes
-    var _name = name;
-    var _type = new Type(type);
-    var _value = value;
-};
-
-var StateVariable = function (name, type) {
-// public methods
-    this.name = function () {
-        return _name;
-    };
-
-    this.type = function () {
-        return _type;
-    };
-
-    this.init = function (value) {
-        if (value) {
-            _init = value;
-        }
-        return _init;
-    };
-
-// private attributes
-    var _name = name;
-    var _type = new Type(type);
-    var _init = null;
-};
-
-var State = function () {
-// public methods
-    this.add_state_variable = function (name, type) {
-        var variable = new StateVariable(name, type);
-
-        _state_variables.push(variable);
-        return variable;
-    };
-
-    this.init_state_variable = function (name, init) {
-        var variable = search(name);
-
-        if (variable) {
-            variable.init(init);
-        } else {
-            throw new Error('variable ' + name + ' doesn\'t exist');
-        }
-    };
-
-    this.state_variables = function () {
-        return _state_variables;
-    };
-
-// private methods
-    var search = function (name) {
-        var i = 0;
-        var found = false;
-
-        while (!found && i < _state_variables.length) {
-            if (_state_variables[i].name() === name) {
-                found = true;
-            } else {
-                ++i;
-            }
-        }
-        if (found) {
-            return _state_variables[i];
-        } else {
-            return null;
-        }
-    };
-
-// private attributes
-    var _state_variables = [];
-};
-
-var StateVector = function (state) {
-// public methods
-    this.state_variables = function () {
-        return _state_variables;
-    };
-
-// private methods
-    var init = function (state) {
-        _state_variables = [];
-        for (var i = 0; i < state.length; ++i) {
-            _state_variables.push(state[i]);
-        }
-    };
-
-// private attributes
-    var _state_variables;
-
-    init(state);
-};
-
-var InputBag = function (bag) {
-// public methods
-    this.inputs = function () {
-        return _inputs;
-    };
-
-// private methods
-    var init = function (bag) {
-        _inputs = bag;
-    };
-
-// private attributes
-    var _inputs;
-
-    init(bag);
-};
-
-var OutputBag = function (bag) {
-// public methods
-    this.outputs = function () {
-        return _outputs;
-    };
-
-// private methods
-    var init = function (bag) {
-        _outputs = bag;
-    };
-
-// private attributes
-    var _outputs;
-
-    init(bag);
-};
+var Model = require('./../../lib/model');
 
 var TaFunction = function (state, expression, condition) {
 // public methods
@@ -173,7 +16,7 @@ var TaFunction = function (state, expression, condition) {
     };
 
 // private attributes
-    var _state = new StateVector(state);
+    var _state = new Model.StateVector(state);
     var _expression = expression;
     var _condition = condition;
 };
@@ -197,8 +40,8 @@ var DeltaConfFunction = function (state, bag, expressions, condition) {
     };
 
 // private attributes
-    var _state = new StateVector(state);
-    var _bag = new InputBag(bag);
+    var _state = new Model.StateVector(state);
+    var _bag = new Model.InputBag(bag);
     var _expressions = expressions;
     var _condition = condition;
 };
@@ -226,9 +69,9 @@ var DeltaExtFunction = function (state, e, bag, expressions, condition) {
     };
 
 // private attributes
-    var _state = new StateVector(state);
+    var _state = new Model.StateVector(state);
     var _e = e;
-    var _bag = new InputBag(bag);
+    var _bag = new Model.InputBag(bag);
     var _expressions = expressions;
     var _condition = condition;
 };
@@ -248,7 +91,7 @@ var DeltaIntFunction = function (state, expressions, condition) {
     };
 
 // private attributes
-    var _state = new StateVector(state);
+    var _state = new Model.StateVector(state);
     var _expressions = expressions;
     var _condition = condition;
 };
@@ -268,12 +111,12 @@ var OutputFunction = function (state, bag, condition) {
     };
 
 // private attributes
-    var _state = new StateVector(state);
-    var _bag = new OutputBag(bag);
+    var _state = new Model.StateVector(state);
+    var _bag = new Model.OutputBag(bag);
     var _condition = condition;
 };
 
-var Model = function (name) {
+var AtomicModel = function (name) {
 // public methods
     this.add_delta_ext_function = function (state, e, bag, expression, condition) {
         _delta_ext_functions.push(new DeltaExtFunction(state, e, bag, expression, condition));
@@ -362,7 +205,7 @@ var Model = function (name) {
         _type_table = [];
         _in_ports = [];
         _out_ports = [];
-        _state = new State();
+        _state = new Model.State();
         _delta_ext_functions = [];
         _delta_int_functions = [];
         _ta_functions = [];
@@ -385,8 +228,5 @@ var Model = function (name) {
 };
 
 if (typeof exports !== 'undefined') {
-    exports.Model = Model;
-    exports.State = State;
-    exports.Type = Type;
-    exports.Parameter = Parameter;
+    exports.AtomicModel = AtomicModel;
 }

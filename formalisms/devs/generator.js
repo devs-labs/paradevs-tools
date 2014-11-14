@@ -86,7 +86,7 @@ exports.grammar = {
     "start": "model",
     "bnf": {
         "model": [["section_name section_parameters section_in_ports section_out_ports section_state section_init section_delta_int section_delta_ext section_ta section_output", "return yy.model"]],
-        "section_name": [["SECTION_NAME : ID ;", "yy.model = new yy.Model.Model($3);"]],
+        "section_name": [["SECTION_NAME : ID ;", "yy.model = new yy.Model.AtomicModel($3);"]],
         "section_parameters": ["SECTION_PARAMETERS : { parameter_assignments }"],
         "parameter_assignments": ["parameter_assignments , parameter_assignment", "parameter_assignment", ""],
         "parameter_assignment": [["variable_name : variable_def = value", "yy.model.add_parameter($1, $3, $5);"]],
