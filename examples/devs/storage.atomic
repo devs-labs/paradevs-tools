@@ -25,9 +25,9 @@ delta_int: {
 }
 
 delta_ext: {
-  (((passive, sigma, store), e), {(in,{x})}) -> (passive, sigma - e, x) [x = 0],
-  (((passive, sigma, store), e), {(in,{x})}) -> (respond, response_time, store) [x <> 0],
-  (((respond, sigma, store), e), {(in,{x})}) -> (passive, sigma - e, store)
+  (((passive, sigma, store), e), (in,{x})) -> (passive, sigma - e, x) [x = 0],
+  (((passive, sigma, store), e), (in,{x})) -> (respond, response_time, store) [x <> 0],
+  (((respond, sigma, store), e), (in,{x})) -> (passive, sigma - e, store)
 }
 
 ta: {

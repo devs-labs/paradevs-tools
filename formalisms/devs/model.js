@@ -21,37 +21,8 @@ var TaFunction = function (state, expression, condition) {
     var _condition = condition;
 };
 
-var DeltaConfFunction = function (state, bag, expressions, condition) {
+var DeltaExtFunction = function (state, e, input, expressions, condition) {
 // public methods
-    this.bag = function () {
-        return _bag;
-    };
-
-    this.condition = function () {
-        return _condition;
-    };
-
-    this.expressions = function () {
-        return _expressions;
-    };
-
-    this.state = function () {
-        return _state;
-    };
-
-// private attributes
-    var _state = new Model.StateVector(state);
-    var _bag = new Model.InputBag(bag);
-    var _expressions = expressions;
-    var _condition = condition;
-};
-
-var DeltaExtFunction = function (state, e, bag, expressions, condition) {
-// public methods
-    this.bag = function () {
-        return _bag;
-    };
-
     this.condition = function () {
         return _condition;
     };
@@ -64,6 +35,10 @@ var DeltaExtFunction = function (state, e, bag, expressions, condition) {
         return _expressions;
     };
 
+    this.input = function () {
+        return _input;
+    };
+
     this.state = function () {
         return _state;
     };
@@ -71,7 +46,7 @@ var DeltaExtFunction = function (state, e, bag, expressions, condition) {
 // private attributes
     var _state = new Model.StateVector(state);
     var _e = e;
-    var _bag = new Model.InputBag(bag);
+    var _input = new Model.Input(input);
     var _expressions = expressions;
     var _condition = condition;
 };
@@ -118,8 +93,8 @@ var OutputFunction = function (state, bag, condition) {
 
 var AtomicModel = function (name) {
 // public methods
-    this.add_delta_ext_function = function (state, e, bag, expression, condition) {
-        _delta_ext_functions.push(new DeltaExtFunction(state, e, bag, expression, condition));
+    this.add_delta_ext_function = function (state, e, input, expression, condition) {
+        _delta_ext_functions.push(new DeltaExtFunction(state, e, input, expression, condition));
     };
 
     this.add_delta_int_function = function (state, expression, condition) {

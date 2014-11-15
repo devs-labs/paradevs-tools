@@ -9,16 +9,16 @@ exports.main = function main() {
     var Checker = require('./formalisms/' + process.argv[2] + '/checker');
     var checker = new Checker(model);
 
-    try {
+//    try {
         checker.check();
 
         var Translator = require('./formalisms/' + process.argv[2] + '/translators/' + process.argv[3] + '_translator');
         var translator = new Translator(model);
         translator.translate();
         console.log(translator.code());
-    } catch (e) {
+/*    } catch (e) {
         console.log(e);
-    }
+    } */
 };
 
 if (require.main === module)

@@ -144,17 +144,10 @@ exports.grammar = {
         "section_delta_ext": ["SECTION_DELTA_EXT : { delta_ext_functions }"],
         "delta_ext_functions": ["delta_ext_functions , delta_ext_function", "delta_ext_function", ""],
         "delta_ext_function": [
-            ["( ( ( state_variables ) , e_variable ) , bag ) -> ( arithmetic_expressions ) condition", "yy.model.add_delta_ext_function($4, $7, $10, $14, $16);"],
-            ["( ( ( state_variables ) , e_variable ) , bag ) -> ( arithmetic_expressions )", "yy.model.add_delta_ext_function($4, $7, $10, $14, null);"]
+            ["( ( ( state_variables ) , e_variable ) , input ) -> ( arithmetic_expressions ) condition", "yy.model.add_delta_ext_function($4, $7, $10, $14, $16);"],
+            ["( ( ( state_variables ) , e_variable ) , input ) -> ( arithmetic_expressions )", "yy.model.add_delta_ext_function($4, $7, $10, $14, null);"]
         ],
         "e_variable": ["ID"],
-        "bag": [
-            ["{ inputs }", "$$=$2;"]
-        ],
-        "inputs": [
-            ["inputs , input", "$$=$1; $1.push($3);"],
-            ["input", "$$=[$1];"]
-        ],
         "input": [
             ["ID", "$$=$1;"],
             ["( ID , { attributes } )", "$$=[$2,$5];"]

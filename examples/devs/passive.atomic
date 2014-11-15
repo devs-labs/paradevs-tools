@@ -19,7 +19,7 @@ delta_int: {
 }
 
 delta_ext: {
-  (((passive), e), {in}) -> (passive)
+  (((passive), e), in) -> (passive)
 }
 
 ta: {

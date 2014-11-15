@@ -86,7 +86,7 @@ var Translator = function (model) {
         translate_state_vector(delta_ext_function.state());
         _code += ', ' + delta_ext_function.e();
         _code += ' ), ';
-        translate_input_bag(delta_ext_function.bag());
+        translate_input(delta_ext_function.input());
         _code += ' ) = ( ';
         for (i = 0; i < delta_ext_function.expressions().length; ++i) {
             translate_arithmetic_expression(delta_ext_function.expressions()[i])
@@ -121,31 +121,22 @@ var Translator = function (model) {
         return _code;
     };
 
-    var translate_input_bag = function (input_bag) {
-        _code += '{ ';
-        for (var i = 0; i < input_bag.inputs().length; ++i) {
-            var input = input_bag.inputs()[i];
+    var translate_input = function (input) {
+        if (input.values().length === 0) {
+            _code += input.port();
+        } else {
+            var port = input.port();
+            var values = input.values();
 
-            if (typeof input === 'string') {
-                _code += input;
-            } else {
-                var port = input[0];
-                var attributes = input[1];
-
-                _code += '( ' + port + ', { ';
-                for (var j = 0; j < attributes.length; ++j) {
-                    _code += attributes[j];
-                    if (j !== attributes.length - 1) {
-                        _code += ', ';
-                    }
+            _code += '( ' + port + ', { ';
+            for (var j = 0; j < values.length; ++j) {
+                _code += values[j];
+                if (j !== values.length - 1) {
+                    _code += ', ';
                 }
-                _code += ' } )';
             }
-            if (i !== input_bag.inputs().length - 1) {
-                _code += ', ';
-            }
+            _code += ' } )';
         }
-        _code += ' }';
     };
 
     var translate_logical_expression = function (expression) {
