@@ -147,16 +147,16 @@ var Translator = function (model) {
         for (var i = 0; i < input_bag.inputs().length; ++i) {
             var input = input_bag.inputs()[i];
 
-            if (typeof input === 'string') {
-                _code += input;
+            if (input.values().length === 0) {
+                _code += input.port();
             } else {
-                var port = input[0];
-                var attributes = input[1];
+                var port = input.port();
+                var values = input.values();
 
                 _code += '( ' + port + ', { ';
-                for (var j = 0; j < attributes.length; ++j) {
-                    _code += attributes[j];
-                    if (j !== attributes.length - 1) {
+                for (var j = 0; j < values.length; ++j) {
+                    _code += values[j];
+                    if (j !== values.length - 1) {
                         _code += ', ';
                     }
                 }
