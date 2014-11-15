@@ -1,0 +1,39 @@
+name : BinaryCounter;
+
+parameters : {
+  period : < R+ > = 10.0
+}
+
+in_ports: { in = { < R > } }
+
+out_ports: { out = { < N > } }
+
+state: {
+  phase = { passive, active },
+  sigma = < R+ >,
+  count = < R+ >
+}
+
+init: {
+  phase = passive,
+  sigma = +inf,
+  count = 0
+}
+
+delta_int: {
+  (phase, sigma, count) -> (passive, +inf, count)
+}
+
+delta_ext: {
+  (((passive, sigma, count), e), (in, {x})) -> (passive, sigma - e, count + x) [ count + x < 2 and x = 0.1],
+  (((passive, sigma, count), e), (in, {x})) -> (passive, 0, 0) [ count + x >= 2 and x = 0.1],
+  (((passive, sigma, count), e), (in, {x})) -> (passive, sigma - e, count + x) [ x <> 0.1]
+}
+
+ta: {
+  (phase, sigma, count) -> sigma
+}
+
+output: {
+  (active, sigma, count) -> {(out, {(value, 1)})}
+}
