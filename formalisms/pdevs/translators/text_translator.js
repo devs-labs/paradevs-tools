@@ -228,7 +228,9 @@ var Translator = function (model) {
 
                 _code += '( ' + port + ', { ';
                 for (var j = 0; j < attributes.length; ++j) {
-                    _code += '( ' + attributes[j][0] + ', ' + attributes[j][1] + ' )';
+                    _code += '( ' + attributes[j][0] + ', ';
+                    translate_arithmetic_expression(attributes[j][1]);
+                    _code += ' )';
                     if (j !== attributes.length - 1) {
                         _code += ', ';
                     }

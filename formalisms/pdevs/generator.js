@@ -278,7 +278,7 @@ exports.grammar = {
             ["attribute2", "$$=[$1];"]
         ],
         "attribute2": [
-            ["( ID , ID )", "$$=[$2,$4];"]
+            ["( ID , arithmetic_expression )", "$$=[$2,$4];"]
         ]
     }
 };

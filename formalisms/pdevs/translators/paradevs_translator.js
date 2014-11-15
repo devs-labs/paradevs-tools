@@ -230,7 +230,7 @@ var Translator = function (model) {
 
                     for (var k = 0; k < attributes.length; ++k) {
                         _code += spaces + 'msgs.push_back(common::ExternalEvent < common::DoubleTime >(';
-                        _code += '"' + port + '", (void*)(&' + attributes[k][1] + ')';
+                        _code += '"' + port + '", (void*)(&' + translate_arithmetic_expression(attributes[k][1]) + ')';
                         _code += '));\n'
                     }
                 }

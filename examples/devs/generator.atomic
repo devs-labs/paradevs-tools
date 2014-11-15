@@ -1,0 +1,33 @@
+name : Generator;
+
+parameters : {
+  period : < R+ > = 10.0
+}
+
+in_ports: { }
+
+out_ports: { out = { < N > } }
+
+state: {
+  phase = { passive, active },
+  sigma = < R+ >
+}
+
+init: {
+  phase = passive,
+  sigma = +inf
+}
+
+delta_int: {
+  (phase, sigma) -> (active, period)
+}
+
+delta_ext: { }
+
+ta: {
+  (phase, sigma) -> sigma
+}
+
+output: {
+  (active, sigma) -> {(out, {(value, 1)})}
+}
