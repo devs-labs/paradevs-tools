@@ -15,15 +15,15 @@ init: {
 }
 
 delta_int: {
-  (Phase) -> (passive) [Phase = passive]
+  (passive) -> (passive)
 }
 
 delta_ext: {
-  (((Phase), t_e), {in}) -> (passive) [Phase = passive]
+  (((passive), e), {in}) -> (passive)
 }
 
 ta: {
-  (Phase) -> +inf [Phase = passive]
+  (passive) -> +inf
 }
 
 output: { }

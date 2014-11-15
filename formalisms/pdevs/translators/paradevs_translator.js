@@ -89,7 +89,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + state_variable + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
                 }
             }
             if (list[i].condition()) {
@@ -114,7 +114,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + state_variable + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
                 }
             }
             if (list[i].condition()) {
@@ -139,7 +139,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + state_variable + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
                 }
             }
             if (list[i].condition()) {

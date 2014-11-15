@@ -3,7 +3,7 @@ var Parser = require('jison').Parser;
 exports.grammar = {
     "lex": {
         "macros": {
-            "id": "[a-zA-Z][_a-zA-Z0-9]+",
+            "id": "[a-zA-Z][_a-zA-Z0-9]*",
             "int": "-?(?:[0-9]|[1-9][0-9]+)",
             "exp": "(?:[eE][-+]?[0-9]+)",
             "frac": "(?:\\.[0-9]+)"
@@ -37,7 +37,7 @@ exports.grammar = {
             ["asinh\\b", "return 'ASINH';"],
             ["acosh\\b", "return 'ACOSH';"],
             ["atanh\\b", "return 'ATANH';"],
-            ["e\\b", "return 'EXP';"],
+            ["exp\\b", "return 'EXP';"],
             ["log\\b", "return 'LOG';"],
             ["ln\\b", "return 'LN';"],
             ["sqrt\\b", "return 'SQRT';"],
@@ -70,10 +70,10 @@ exports.grammar = {
             [">=", "return '>=';"],
             ["=", "return '=';"],
             ["_\\b", "return '_';"],
-            ["{id}", "return 'ID';"],
             ["R\\b", "return 'R';"],
             ["N\\b", "return 'N';"],
             ["Z\\b", "return 'Z';"],
+            ["{id}", "return 'ID';"],
             ["{int}{frac}?{exp}?\\b", "return 'REAL';"],
             ["{int}\\b", "return 'INTEGER';"],
             [".", "/* ignore bad characters */"]
@@ -134,7 +134,7 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=new yy.Expression.Variable(yytext);"]
+            ["ID", "$$=new yy.Expression.Constant(yytext);"]
         ],
         "section_delta_int": ["SECTION_DELTA_INT : { delta_int_functions }"],
         "delta_int_functions": ["delta_int_functions , delta_int_function", "delta_int_function", ""],
@@ -182,7 +182,12 @@ exports.grammar = {
             ["state_variable", "$$=[$1];"],
             ["", "$$=[];"]
         ],
-        "state_variable": ["ID"],
+        "state_variable": [
+            ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
+            ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
+            ["INFINITY", "$$=new yy.Expression.Infinity();"],
+            ["ID", "$$=yy.model.is_state_variable(yytext) ? new yy.Expression.Variable(yytext) : new yy.Expression.Constant(yytext);"]
+        ],
         "arithmetic_expressions": [
             ["arithmetic_expressions , arithmetic_expression", "$$=$1; $1.push($3);"],
             ["arithmetic_expression", "$$=[$1];"]
@@ -226,7 +231,7 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["state_variable", "$$=new yy.Expression.Variable(yytext);"]
+            ["ID", "$$=new yy.Expression.Variable(yytext);"]
         ],
         "condition": [["[ conditional_expression ]", "$$=$2"]],
         "conditional_expression": [

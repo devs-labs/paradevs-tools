@@ -313,7 +313,7 @@ var Translator = function (model) {
     var translate_state_vector = function (state) {
         _code += '( ';
         for (var i = 0; i < state.state_variables().length; ++i) {
-            _code += state.state_variables()[i];
+            translate_arithmetic_expression(state.state_variables()[i]);
             if (i !== state.state_variables().length - 1) {
                 _code += ', ';
             }

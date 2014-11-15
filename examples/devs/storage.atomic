@@ -21,13 +21,13 @@ init: {
 }
 
 delta_int: {
-  (phase, sigma, store) -> (passive, +inf, store) [phase = respond]
+  (respond, sigma, store) -> (passive, +inf, store)
 }
 
 delta_ext: {
-  (((phase, sigma, store), t_e), {(in,{x_})}) -> (passive, sigma - t_e, x_) [phase = passive and x_ = 0],
-  (((phase, sigma, store), t_e), {(in,{x_})}) -> (respond, response_time, store) [phase = passive and x_ <> 0],
-  (((phase, sigma, store), t_e), {(in,{x_})}) -> (passive, sigma - t_e, store) [phase = respond]
+  (((passive, sigma, store), e), {(in,{x})}) -> (passive, sigma - e, x) [x = 0],
+  (((passive, sigma, store), e), {(in,{x})}) -> (respond, response_time, store) [x <> 0],
+  (((respond, sigma, store), e), {(in,{x})}) -> (passive, sigma - e, store)
 }
 
 ta: {

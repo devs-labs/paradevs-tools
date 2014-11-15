@@ -146,7 +146,7 @@ var AtomicModel = function (name) {
         var state_variable = _state.add_state_variable(name, type);
 
         if (state_variable.type().is_set()) {
-            _type_table.push(state_variable.type().type());
+            _type_table[name] = state_variable.type();
         }
     };
 
@@ -168,6 +168,10 @@ var AtomicModel = function (name) {
 
     this.in_ports = function () {
         return _in_ports;
+    };
+
+    this.is_state_variable = function (name) {
+        return _state.search(name) !== null;
     };
 
     this.name = function () {
@@ -202,7 +206,7 @@ var AtomicModel = function (name) {
     var init = function (name) {
         _name = name;
         _parameters = [];
-        _type_table = [];
+        _type_table = {};
         _in_ports = [];
         _out_ports = [];
         _state = new Model.State();
