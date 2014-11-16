@@ -1,37 +1,13 @@
 var Expression = require('./../../../lib/expression');
+var Model = require('./../model');
 
 var Translator = function (model) {
 // public methods
     this.translate = function () {
-        var i;
-        var n;
-
-        _code += 'parameters = { ';
-        for (i = 0; i < _model.parameters().length; ++i) {
-            translate_parameters(_model.parameters()[i]);
-            if (i !== _model.parameters().length - 1) {
-                _code += ', ';
-            }
-        }
-        _code += ' }\n';
-        translate_ports('X', _model.in_ports());
-        translate_ports('Y', _model.out_ports());
-        translate_state(_model.state());
-        for (i = 0; i < _model.ta_functions().length; ++i) {
-            translate_ta(_model.ta_functions()[i]);
-            _code += '\n';
-        }
-        for (i = 0; i < _model.delta_ext_functions().length; ++i) {
-            translate_delta_ext(_model.delta_ext_functions()[i]);
-            _code += '\n';
-        }
-        for (i = 0; i < _model.delta_int_functions().length; ++i) {
-            translate_delta_int(_model.delta_int_functions()[i]);
-            _code += '\n';
-        }
-        for (i = 0; i < _model.output_functions().length; ++i) {
-            translate_output(_model.output_functions()[i]);
-            _code += '\n';
+        if (_model instanceof Model.AtomicModel) {
+            translate_atomic_model();
+        } else {
+            translate_coupled_model();
         }
         return _code;
     };
@@ -77,6 +53,49 @@ var Translator = function (model) {
                 translate_arithmetic_expression(expression.get(2));
             }
         }
+    };
+
+    var translate_atomic_model = function () {
+        var i;
+        var n;
+
+        _code += 'parameters = { ';
+        for (i = 0; i < _model.parameters().length; ++i) {
+            translate_parameters(_model.parameters()[i]);
+            if (i !== _model.parameters().length - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
+        translate_ports('X', _model.in_ports());
+        translate_ports('Y', _model.out_ports());
+        translate_state(_model.state());
+        for (i = 0; i < _model.ta_functions().length; ++i) {
+            translate_ta(_model.ta_functions()[i]);
+            _code += '\n';
+        }
+        for (i = 0; i < _model.delta_ext_functions().length; ++i) {
+            translate_delta_ext(_model.delta_ext_functions()[i]);
+            _code += '\n';
+        }
+        for (i = 0; i < _model.delta_int_functions().length; ++i) {
+            translate_delta_int(_model.delta_int_functions()[i]);
+            _code += '\n';
+        }
+        for (i = 0; i < _model.output_functions().length; ++i) {
+            translate_output(_model.output_functions()[i]);
+            _code += '\n';
+        }
+    };
+
+    var translate_coupled_model = function () {
+        translate_ports('X', _model.in_ports());
+        translate_ports('Y', _model.out_ports());
+        translate_sub_models(_model.sub_models());
+        translate_input_connections(_model.input_connections());
+        translate_output_connections(_model.output_connections());
+        translate_internal_connections(_model.internal_connections());
+        _code += 'select =';
     };
 
     var translate_delta_ext = function (delta_ext_function) {
@@ -137,6 +156,46 @@ var Translator = function (model) {
             }
             _code += ' } )';
         }
+    };
+
+    var translate_input_connections = function (input_connections) {
+        var i;
+
+        _code += 'EIC = { ';
+        for (i = 0; i < input_connections.length; ++i) {
+            _code += '( ( N, ';
+            _code += input_connections[i].coupled_input_port();
+            _code += ' ), ( ';
+            _code += input_connections[i].inner_model_name();
+            _code += ', ';
+            _code += input_connections[i].inner_input_port();
+            _code += ' ) )';
+            if (i !== input_connections.length - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
+    };
+
+    var translate_internal_connections = function (internal_connections) {
+        var i;
+
+        _code += 'IC = { ';
+        for (i = 0; i < internal_connections.length; ++i) {
+            _code += '( ( ';
+            _code += internal_connections[i].source_model_name();
+            _code += ', ';
+            _code += internal_connections[i].source_output_port();
+            _code += ' ), ( ';
+            _code += internal_connections[i].destination_model_name();
+            _code += ', ';
+            _code += internal_connections[i].destination_input_port();
+            _code += ' ) )';
+            if (i !== internal_connections.length - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
     };
 
     var translate_logical_expression = function (expression) {
@@ -214,6 +273,25 @@ var Translator = function (model) {
         _code += ' }';
     };
 
+    var translate_output_connections = function (output_connections) {
+        var i;
+
+        _code += 'EOC = { ';
+        for (i = 0; i < output_connections.length; ++i) {
+            _code += '( ( ';
+            _code += output_connections[i].inner_model_name();
+            _code += ', ';
+            _code += output_connections[i].inner_output_port();
+            _code += ' ), ( N, ';
+            _code += output_connections[i].coupled_output_port();
+            _code += ' ) )';
+            if (i !== output_connections.length - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
+    };
+
     var translate_parameters = function (parameter) {
         _code += parameter.name() + '(';
         translate_type(parameter.type().type());
@@ -233,7 +311,7 @@ var Translator = function (model) {
             if (port.types().length > 0) {
                 _code += ', ';
                 for (var j = 0; j < port.types().length; ++j) {
-                    translate_type(port.types()[i].type());
+                    translate_type(port.types()[j].type());
                     if (j !== port.types().length - 1) {
                         _code += 'x';
                     }
@@ -291,6 +369,22 @@ var Translator = function (model) {
             }
         }
         _code += ' )';
+    };
+
+    var translate_sub_models = function (sub_models) {
+        var i;
+
+        _code += 'D = { ';
+        for (i = 0; i < sub_models.length; ++i) {
+            _code += sub_models[i].name();
+            if (i !== sub_models.length - 1) {
+                _code += ', ';
+            }
+        }
+        _code += ' }\n';
+        for (i = 0; i < sub_models.length; ++i) {
+            _code += 'M(' + sub_models[i].name() + ') = ' + sub_models[i].type() + '\n';
+        }
     };
 
     var translate_ta = function (ta_function) {

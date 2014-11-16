@@ -1,12 +1,16 @@
 var Expression = require('./../../lib/expression');
+var Model = require('./model');
 
 var Checker = function (model) {
 // public methods
     this.check = function () {
-        check_ta();
-        check_delta_int();
-        check_delta_ext();
-        check_output();
+        if (_model instanceof Model.AtomicModel) {
+            check_ta();
+            check_delta_int();
+            check_delta_ext();
+            check_output();
+        } else {
+        }
     };
 
 // private methods

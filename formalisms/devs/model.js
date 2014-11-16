@@ -206,6 +206,183 @@ var AtomicModel = function (name) {
     init(name);
 };
 
+var SubModel = function (name, type, atomic) {
+// public methods
+    this.is_atomic = function () {
+        return _atomic;
+    };
+
+    this.is_coupled = function () {
+        return !_atomic;
+    };
+
+    this.name = function () {
+        return _name;
+    };
+
+    this.type = function () {
+        return _type;
+    };
+
+// private attributes
+    var _name = name;
+    var _type = type;
+    var _atomic = atomic;
+};
+
+var InputConnection = function (coupled_input_port, inner_model_name, inner_input_port) {
+// public methods
+    this.coupled_input_port = function () {
+        return _coupled_input_port;
+    };
+
+    this.inner_model_name = function () {
+        return _inner_model_name;
+    };
+
+    this.inner_input_port = function () {
+        return _inner_input_port;
+    };
+
+// private attributes
+    var _coupled_input_port = coupled_input_port;
+    var _inner_model_name = inner_model_name;
+    var _inner_input_port = inner_input_port;
+};
+
+var OutputConnection = function (inner_model_name, inner_output_port, coupled_output_port) {
+// public methods
+    this.coupled_output_port = function () {
+        return _coupled_output_port;
+    };
+
+    this.inner_model_name = function () {
+        return _inner_model_name;
+    };
+
+    this.inner_output_port = function () {
+        return _inner_output_port;
+    };
+
+// private attributes
+    var _inner_model_name = inner_model_name;
+    var _inner_output_port = inner_output_port;
+    var _coupled_output_port = coupled_output_port;
+};
+
+var InternalConnection = function (source_model_name, source_output_port, destination_model_name, destination_input_port) {
+// public methods
+    this.destination_model_name = function () {
+        return _destination_model_name;
+    };
+
+    this.destination_input_port = function () {
+        return _destination_input_port;
+    };
+
+    this.source_model_name = function () {
+        return _source_model_name;
+    };
+
+    this.source_output_port = function () {
+        return _source_output_port;
+    };
+
+// private attributes
+    var _destination_model_name = destination_model_name;
+    var _destination_input_port = destination_input_port;
+    var _source_model_name = source_model_name;
+    var _source_output_port = source_output_port;
+};
+
+var CoupledModel = function (name) {
+// public methods
+    this.add_in_port = function (name, types) {
+        _in_ports.push(new Model.Port(name, types));
+    };
+
+    this.add_input_connection = function (coupled_input_port, inner_model_name, inner_input_port) {
+        _input_connections.push(new InputConnection(coupled_input_port, inner_model_name, inner_input_port));
+    };
+
+    this.add_internal_connection = function (source_model_name, source_output_port, destination_model_name, destination_input_port) {
+        _internal_connections.push(new InternalConnection(source_model_name, source_output_port, destination_model_name, destination_input_port));
+    };
+
+    this.add_out_port = function (name, types) {
+        _out_ports.push(new Model.Port(name, types));
+    };
+
+    this.add_output_connection = function (inner_model_name, inner_output_port, coupled_output_port) {
+        _output_connections.push(new OutputConnection(inner_model_name, inner_output_port, coupled_output_port));
+    };
+
+    this.add_select = function (select) {
+        _select = select;
+    };
+
+    this.add_sub_model = function (name, type, atomic) {
+        _sub_models.push(new SubModel(name, type, atomic));
+    };
+
+    this.in_ports = function () {
+        return _in_ports;
+    };
+
+    this.input_connections = function () {
+        return _input_connections;
+    };
+
+    this.internal_connections = function () {
+        return _internal_connections;
+    };
+
+    this.name = function () {
+        return _name;
+    };
+
+    this.out_ports = function () {
+        return _out_ports;
+    };
+
+    this.output_connections = function () {
+        return _output_connections;
+    };
+
+    this.select = function () {
+        return _select;
+    };
+
+    this.sub_models = function () {
+        return _sub_models;
+    };
+
+// private methods
+    var init = function (name) {
+        _name = name;
+        _in_ports = [];
+        _out_ports = [];
+        _sub_models = [];
+        _input_connections = [];
+        _output_connections = [];
+        _internal_connections = [];
+        _select = null;
+    };
+
+// private attributes
+    var _name;
+    var _in_ports;
+    var _out_ports;
+    var _sub_models;
+    var _input_connections;
+    var _output_connections;
+    var _internal_connections;
+    var _select;
+
+    init(name);
+};
+
 if (typeof exports !== 'undefined') {
     exports.AtomicModel = AtomicModel;
+    exports.CoupledModel = CoupledModel;
 }
