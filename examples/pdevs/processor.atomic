@@ -1,0 +1,40 @@
+name : Processor;
+
+parameters : {
+}
+
+in_ports: {
+  in = {(x=<R>,y=<R>)}
+}
+
+out_ports: {
+  out = {}
+}
+
+state: {
+  phase = { passive, busy },
+  sigma = < R+ >,
+  q = [(x=<R>,y=<R>)]
+}
+
+init: {
+  phase = passive,
+  sigma = +inf,
+  q = 0
+}
+
+delta_int: {
+}
+
+delta_ext: {
+}
+
+delta_conf: {
+}
+
+ta: {
+  (phase, sigma, q) -> +inf
+}
+
+output: {
+}

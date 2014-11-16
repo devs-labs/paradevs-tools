@@ -149,7 +149,7 @@ var AtomicModel = function (name) {
     this.add_state_variable = function (name, type) {
         var state_variable = _state.add_state_variable(name, type);
 
-        if (state_variable.type().is_set()) {
+        if (state_variable.type() instanceof Model.SetType) {
             _type_table[name] = state_variable.type();
         }
     };

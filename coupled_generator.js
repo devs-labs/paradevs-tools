@@ -3,6 +3,7 @@ exports.main = function main() {
     var source = require('fs').readFileSync(require('path').normalize('./examples/' + process.argv[2] + '/' + process.argv[4]), "utf8");
 
     parser.yy.Model = require('./formalisms/' + process.argv[2] + '/model');
+    parser.yy.SuperModel = require('./lib/model');
     parser.yy.Expression = require('./lib/expression');
 
     var model = parser.parse(source);
