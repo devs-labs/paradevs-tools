@@ -8,7 +8,7 @@ in_ports: {
 }
 
 out_ports: {
-  out = {}
+  out = {(x=<R>,y=<R>)}
 }
 
 state: {

@@ -400,6 +400,8 @@ var Translator = function (model) {
     };
 
     var translate_type = function (type) {
+        var i;
+
         if (type instanceof Model.RealType) {
             var t = type.type();
 
@@ -429,7 +431,7 @@ var Translator = function (model) {
             }
         } else if (type instanceof Model.ConstantType) {
             _code += '{ ';
-            for (var i = 0; i < type.size(); ++i) {
+            for (i = 0; i < type.size(); ++i) {
                 _code += type.get(i);
                 if (i !== type.size() - 1) {
                     _code += ', ';
@@ -437,10 +439,11 @@ var Translator = function (model) {
             }
             _code += ' }';
         } else if (type instanceof  Model.SetType) {
-
+            translate_type(type.type());
+            _code += '^p';
         } else if (type instanceof  Model.StructType) {
             _code += '( ';
-            for (var i = 0; i < type.size(); ++i) {
+            for (i = 0; i < type.size(); ++i) {
                 _code += type.get(i)[0] + ' ' + String.fromCharCode(0x2208) + ' ';
                 translate_type(type.get(i)[1]);
                 if (i !== type.size() - 1) {
