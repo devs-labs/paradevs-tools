@@ -1,10 +1,11 @@
 var Expression = require('./../../../lib/expression');
-var Model = require('./../model');
+var DevsModel = require('./../model');
+var Model = require('./../../../lib/model');
 
 var Translator = function (model) {
 // public methods
     this.translate = function () {
-        if (_model instanceof Model.AtomicModel) {
+        if (_model instanceof DevsModel.AtomicModel) {
             translate_atomic_model();
         } else {
             translate_coupled_model();
@@ -294,7 +295,7 @@ var Translator = function (model) {
 
     var translate_parameters = function (parameter) {
         _code += parameter.name() + '(';
-        translate_type(parameter.type().type());
+        translate_type(parameter.type());
         _code += ')=';
         translate_arithmetic_expression(parameter.value());
     };
@@ -311,7 +312,7 @@ var Translator = function (model) {
             if (port.types().length > 0) {
                 _code += ', ';
                 for (var j = 0; j < port.types().length; ++j) {
-                    translate_type(port.types()[j].type());
+                    translate_type(port.types()[j]);
                     if (j !== port.types().length - 1) {
                         _code += 'x';
                     }
@@ -342,7 +343,7 @@ var Translator = function (model) {
         for (i = 0; i < n; ++i) {
             variable = state.state_variables()[i];
             _code += variable.name() + ' ' + String.fromCharCode(0x2208) + ' ';
-            translate_type(variable.type().type());
+            translate_type(variable.type());
             if (i !== n - 1) {
                 _code += ', ';
             }
@@ -399,39 +400,54 @@ var Translator = function (model) {
     };
 
     var translate_type = function (type) {
-        if (typeof type === 'string') {
-            if (type.charAt(0) === 'R') {
+        if (type instanceof Model.RealType) {
+            var t = type.type();
+
+            if (t.charAt(0) === 'R') {
                 _code += String.fromCharCode(0x211d);
-                if (type.length === 2) {
-                    if (type.charAt(1) === '+') {
+                if (t.length === 2) {
+                    if (t.charAt(1) === '+') {
                         _code += String.fromCharCode(0x207a);
-                    } else if (type.charAt(1) === '-') {
+                    } else if (t.charAt(1) === '-') {
                         _code += String.fromCharCode(0x207b);
-                    } else if (type.charAt(1) === '*') {
+                    } else if (t.charAt(1) === '*') {
                         _code += String.fromCharCode(0x22c6);
                     }
                 } else {
-                    if (type.charAt(1) === '+') {
+                    if (t.charAt(1) === '+') {
                         _code += String.fromCharCode(0x208a) + String.fromCharCode(0x22c6);
-                    } else if (type.charAt(1) === '-') {
+                    } else if (t.charAt(1) === '-') {
                         _code += String.fromCharCode(0x208b) + String.fromCharCode(0x22c6);
                     }
                 }
-                return _code;
-            } else if (type.charAt(0) === 'N') {
+            }
+        } else if (type instanceof Model.IntegerType) {
+            if (type.type() === 'N') {
                 _code += String.fromCharCode(0x2115);
-            } else if (type.charAt(0) === 'Z') {
+            } else {
                 _code += String.fromCharCode(0x2124);
             }
-        } else {
+        } else if (type instanceof Model.ConstantType) {
             _code += '{ ';
-            for (var i = 0; i < type.length; ++i) {
-                _code += type[i];
-                if (i !== type.length - 1) {
+            for (var i = 0; i < type.size(); ++i) {
+                _code += type.get(i);
+                if (i !== type.size() - 1) {
                     _code += ', ';
                 }
             }
             _code += ' }';
+        } else if (type instanceof  Model.SetType) {
+
+        } else if (type instanceof  Model.StructType) {
+            _code += '( ';
+            for (var i = 0; i < type.size(); ++i) {
+                _code += type.get(i)[0] + ' ' + String.fromCharCode(0x2208) + ' ';
+                translate_type(type.get(i)[1]);
+                if (i !== type.size() - 1) {
+                    _code += ', ';
+                }
+            }
+            _code += ' )';
         }
     };
 

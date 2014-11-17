@@ -1,5 +1,6 @@
 var Expression = require('./../../lib/expression');
 var Model = require('./model');
+var SuperModel = require('./../../lib/model');
 
 var Checker = function (model) {
 // public methods
@@ -29,8 +30,8 @@ var Checker = function (model) {
                     var state_variable_type = _model.type_table()[name];
 
                     if (state_variable_type) {
-                        if (typeof state_variable_type.type() !== 'string') {
-                            var list = state_variable_type.type();
+                        if (state_variable_type instanceof SuperModel.ConstantType) {
+                            var list = state_variable_type.list();
                             var found = false;
                             var k = 0;
 

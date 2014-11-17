@@ -110,15 +110,24 @@ exports.grammar = {
             ["variable_def", "$$ = [$1];"]
         ],
         "variable_def": [
-            ["{ symbols }", "$$=$2"],
-            ["< R >", "$$='R';"],
-            ["< R + >", "$$='R+';"],
-            ["< R - >", "$$='R-';"],
-            ["< R * >", "$$='R*';"],
-            ["< R + * >", "$$='R+*';"],
-            ["< R - * >", "$$='R-*';"],
-            ["< N >", "$$='N';"],
-            ["< Z >", "$$='Z';"]
+            ["{ symbols }", "$$=new yy.SuperModel.ConstantType($2);"],
+            ["< R >", "$$=new yy.SuperModel.RealType('R');"],
+            ["< R + >", "$$=new yy.SuperModel.RealType('R+');"],
+            ["< R - >", "$$=new yy.SuperModel.RealType('R-');"],
+            ["< R * >", "$$=new yy.SuperModel.RealType('R*');"],
+            ["< R + * >", "$$=new yy.SuperModel.RealType('R+*');"],
+            ["< R - * >", "$$=new yy.SuperModel.RealType('R-*');"],
+            ["< N >", "$$=new yy.SuperModel.IntegerType('N');"],
+            ["< Z >", "$$=new yy.SuperModel.IntegerType('Z');"],
+            ["( attribute_defs )", "$$=new yy.SuperModel.StructType($2);"],
+            ["[ variable_def ]", "$$=new yy.SuperModel.SetType($2);"],
+        ],
+        "attribute_defs": [
+            ["attribute_defs , attribute_def", "$$ = $1; $1.push($3);"],
+            ["attribute_def", "$$ = [$1];"]
+        ],
+        "attribute_def": [
+            ["ID = variable_def", "$$=[$1, $3];"]
         ],
         "variable_name": [["ID", "$$=yytext;"]],
         "symbols": [
