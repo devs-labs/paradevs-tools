@@ -6,7 +6,7 @@ exports.grammar = {
             "id": "[a-zA-Z][_a-zA-Z0-9]*",
             "int": "-?(?:[0-9]|[1-9][0-9]+)",
             "exp": "(?:[eE][-+]?[0-9]+)",
-            "frac": "(?:\\.[0-9]+)"
+            "frac": "(\\.[0-9]+)"
         },
         "rules": [
             ["\\s+", "/* skip whitespace */"],
@@ -23,6 +23,8 @@ exports.grammar = {
             ["output\\b", "return 'SECTION_OUTPUT';"],
             ["init\\b", "return 'SECTION_INIT';"],
             ["default\\b", "return 'DEFAULT';"],
+            ["first\\b", "return 'FIRST';"],
+            ["last\\b", "return 'LAST';"],
             ["sin\\b", "return 'SIN';"],
             ["cos\\b", "return 'COS';"],
             ["tan\\b", "return 'TAN';"],
@@ -43,12 +45,14 @@ exports.grammar = {
             ["sqrt\\b", "return 'SQRT';"],
             ["max\\b", "return 'MAX';"],
             ["min\\b", "return 'MIN';"],
+            ["push\\b", "return 'PUSH';"],
             ["or\\b", "return 'OR';"],
             ["and\\b", "return 'AND';"],
             ["not\\b", "return 'NOT';"],
             ["\\|", "return 'BAR';"],
             [":", "return ':';"],
             [";", "return ';';"],
+            ["\\.", "return '.';"],
             ["\\{", "return '{';"],
             ["\\}", "return '}';"],
             ["\\[", "return '[';"],
@@ -80,10 +84,11 @@ exports.grammar = {
         ]
     },
     "tokens": "SECTION_NAME SECTION_IN_PORTS SECTION_OUT_PORTS SECTION_PARAMETERS SECTION_STATE SECTION_INIT SECTION_DELTA_INT SECTION_DELTA_EXT SECTION_DELTA_CONF SECTION_TA SECTION_OUTPUT " +
-    "; : { } [ ] -> ( ) + - * / , = _ ID INTEGER REAL INFINITY DEFAULT " +
+    "; . : { } [ ] -> ( ) + - * / , = _ ID INTEGER REAL INFINITY DEFAULT " +
     "SIN COS TAN COTAN ASIN ACOS ATAN SINH COSH TANH COTANH ASINH ACOSH ATANH " +
-    "EXP LN LOG POW, SQRT ABS BAR MAX MIN " +
-    "OR AND NOT <> < > <= >=",
+    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH " +
+    "OR AND NOT <> < > <= >= " +
+    "FIRST LAST",
     "start": "model",
     "bnf": {
         "model": [["section_name section_parameters section_in_ports section_out_ports section_state section_init section_delta_int section_delta_ext section_delta_conf section_ta section_output", "return yy.model"]],
@@ -173,12 +178,17 @@ exports.grammar = {
             ["attributes , attribute", "$$=$1; $1.push($3);"],
             ["attribute", "$$=[$1];"]
         ],
-        "attribute": ["ID"],
+        "attribute": [
+            ["ID", "$$=$1"],
+            ["[ ID ] ", "$$=$2"]
+        ],
         "section_delta_conf": ["SECTION_DELTA_CONF : { delta_conf_functions }"],
         "delta_conf_functions": ["delta_conf_functions , delta_conf_function", "delta_conf_function", ""],
         "delta_conf_function": [
             ["( ( state_variables ) , bag ) -> ( arithmetic_expressions ) condition", "yy.model.add_delta_conf_function($3, $6, $10, $12);"],
-            ["( ( state_variables ) , bag ) -> ( arithmetic_expressions )", "yy.model.add_delta_conf_function($3, $6, $10, null);"]
+            ["( ( state_variables ) , bag ) -> ( arithmetic_expressions )", "yy.model.add_delta_conf_function($3, $6, $10, null);"],
+            ["( ( state_variables ) , bag ) -> SECTION_DELTA_INT ( SECTION_DELTA_EXT ( ( ( state_variables ) , value ) , bag ) )", "yy.model.add_delta_conf_function2($3, $6, $18, false);"],
+            ["( ( state_variables ) , bag ) -> SECTION_DELTA_EXT ( SECTION_DELTA_INT ( ( state_variables ) ) , value , bag )", "yy.model.add_delta_conf_function2($3, $6, $18, true);"]
         ],
         "section_ta": ["SECTION_TA : { ta_list }"],
         "ta_list": ["ta_list , ta", "ta"],
@@ -195,8 +205,10 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=yy.model.is_state_variable(yytext) ? new yy.Expression.Variable(yytext) : new yy.Expression.Constant(yytext);"]
+            ["ID", "$$=yy.model.is_state_variable(yytext) ? new yy.Expression.Variable(yytext) : new yy.Expression.Constant(yytext);"],
+            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3);"]
         ],
+        "position": [ "FIRST", "LAST" ],
         "arithmetic_expressions": [
             ["arithmetic_expressions , arithmetic_expression", "$$=$1; $1.push($3);"],
             ["arithmetic_expression", "$$=[$1];"]
@@ -234,13 +246,14 @@ exports.grammar = {
             "SQRT"
         ],
         "binary_function": [
-            "LOG", "POW", "MAX", "MIN"
+            "LOG", "POW", "MAX", "MIN", "PUSH"
         ],
         "litteral": [
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=new yy.Expression.Variable(yytext);"]
+            ["ID", "$$=new yy.Expression.Variable(yytext);"],
+            ["[ ID ]", "$$=new yy.Expression.SetVariable($2);"]
         ],
         "condition": [["[ conditional_expression ]", "$$=$2"]],
         "conditional_expression": [

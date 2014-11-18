@@ -1,6 +1,7 @@
 name : Processor;
 
 parameters : {
+  processing_time : < R+ > = 10
 }
 
 in_ports: {
@@ -24,12 +25,17 @@ init: {
 }
 
 delta_int: {
+  (phase, sigma, q.first) -> (passive, processing_time, q)
 }
 
 delta_ext: {
+  (((passive, sigma, q), e), {(in,{[v]})}) -> (busy, processing_time, q),
+  (((phase, sigma, q), e), {(in,{[v]})}) -> (phase, sigma - e, push(q, [v]))
 }
 
 delta_conf: {
+  ((passive, sigma, q), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, q)), 0, {(in,{[v]})}),
+  ((passive, sigma, q), {(in,{[v]})}) -> delta_int(delta_ext(((phase, sigma, q), 0), {(in,{[v]})}))
 }
 
 ta: {

@@ -46,6 +46,31 @@ var DeltaConfFunction = function (state, bag, expressions, condition) {
     var _condition = condition;
 };
 
+var DeltaConfFunction2 = function (state, bag, value, internal) {
+// public methods
+    this.bag = function () {
+        return _bag;
+    };
+
+    this.internal = function () {
+        return _internal;
+    };
+
+    this.state = function () {
+        return _state;
+    };
+
+    this.value = function () {
+        return _value;
+    };
+
+// private attributes
+    var _state = new Model.StateVector(state);
+    var _bag = new Model.InputBag(bag);
+    var _internal = internal;
+    var _value = value;
+};
+
 var DeltaExtFunction = function (state, e, bag, expressions, condition) {
 // public methods
     this.bag = function () {
@@ -120,6 +145,10 @@ var AtomicModel = function (name) {
 // public methods
     this.add_delta_conf_function = function (state, bag, expression, condition) {
         _delta_conf_functions.push(new DeltaConfFunction(state, bag, expression, condition));
+    };
+
+    this.add_delta_conf_function2 = function (state, bag, value, internal) {
+        _delta_conf_functions.push(new DeltaConfFunction2(state, bag, value, internal));
     };
 
     this.add_delta_ext_function = function (state, e, bag, expression, condition) {
@@ -243,4 +272,6 @@ var AtomicModel = function (name) {
 
 if (typeof exports !== 'undefined') {
     exports.AtomicModel = AtomicModel;
+    exports.DeltaConfFunction2 = DeltaConfFunction2;
+    exports.DeltaConfFunction = DeltaConfFunction;
 }

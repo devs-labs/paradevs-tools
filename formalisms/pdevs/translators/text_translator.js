@@ -1,5 +1,6 @@
 var Expression = require('./../../../lib/expression');
 var Model = require('./../../../lib/model');
+var PDevsModel = require('./../model');
 var TextTranslator = require('./../../../lib/translator/text_translator');
 
 var Translator = function (model) {
@@ -54,17 +55,34 @@ var Translator = function (model) {
         translate_state_vector(delta_conf_function.state());
         _super.push(', ');
         translate_input_bag(delta_conf_function.bag());
-        _super.push(' ) = ( ');
-        for (i = 0; i < delta_conf_function.expressions().length; ++i) {
-            _super.translate_arithmetic_expression(delta_conf_function.expressions()[i]);
-            if (i !== delta_conf_function.expressions().length - 1) {
-                _super.push(', ');
+        _super.push(' ) = ');
+        if (delta_conf_function instanceof PDevsModel.DeltaConfFunction) {
+            _super.push(')');
+            for (i = 0; i < delta_conf_function.expressions().length; ++i) {
+                _super.translate_arithmetic_expression(delta_conf_function.expressions()[i]);
+                if (i !== delta_conf_function.expressions().length - 1) {
+                    _super.push(', ');
+                }
             }
-        }
-        _super.push(' )');
-        if (delta_conf_function.condition()) {
-            _super.push(' if ');
-            _super.translate_logical_expression(delta_conf_function.condition());
+            _super.push(' )');
+            if (delta_conf_function.condition()) {
+                _super.push(' if ');
+                _super.translate_logical_expression(delta_conf_function.condition());
+            }
+        } else {
+            if (delta_conf_function.internal()) {
+                _super.push('delta_ext ( delta_int ( ');
+                translate_state_vector(delta_conf_function.state());
+                _super.push(' ), 0, ');
+                translate_input_bag(delta_conf_function.bag());
+                _super.push(' ) )');
+            } else {
+                _super.push('delta_int ( delta_ext ( ');
+                translate_state_vector(delta_conf_function.state());
+                _super.push(', 0, ');
+                translate_input_bag(delta_conf_function.bag());
+                _super.push(' ) )');
+            }
         }
     };
 
@@ -179,7 +197,7 @@ var Translator = function (model) {
 
     var translate_parameters = function (parameter) {
         _super.push(parameter.name() + '(');
-        _super.translate_type(parameter.type().type());
+        _super.translate_type(parameter.type());
         _super.push(')=');
         _super.translate_arithmetic_expression(parameter.value());
     };
