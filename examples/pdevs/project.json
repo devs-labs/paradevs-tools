@@ -1,0 +1,5 @@
+{
+  "root": "processor.atomic",
+  "formalism": "pdevs",
+  "target": "text"
+}
