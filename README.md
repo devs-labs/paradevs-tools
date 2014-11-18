@@ -14,5 +14,4 @@ Execution
 ---------
 
 ```bash
-$ node atomic_generator.js pdevs text processor.atomic
-$ node atomic_generator.js devs text storage.atomic
+$ node generator.js example/pdevs/project.json
