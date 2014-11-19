@@ -1,6 +1,6 @@
 var Expression = require('./../../../lib/expression');
+var DevsModel = require('./../../../formalisms/devs/model');
 var Model = require('./../../../lib/model');
-var PDevsModel = require('./../model');
 var TextTranslator = require('./../../../lib/translator/text_translator');
 
 var Translator = function (model) {
@@ -11,6 +11,15 @@ var Translator = function (model) {
     this.code = _super.code;
 
     this.translate = function () {
+        if (_super.model() instanceof DevsModel.AtomicModel) {
+            translate_atomic_model();
+        } else {
+            translate_coupled_model();
+        }
+    };
+
+// private methods
+    var translate_atomic_model = function () {
         var i;
         var n;
 
@@ -37,53 +46,20 @@ var Translator = function (model) {
             translate_delta_int(_super.model().delta_int_functions()[i]);
             _super.push('\n');
         }
-        for (i = 0; i < _super.model().delta_conf_functions().length; ++i) {
-            translate_delta_conf(_super.model().delta_conf_functions()[i]);
-            _super.push('\n');
-        }
         for (i = 0; i < _super.model().output_functions().length; ++i) {
             translate_output(_super.model().output_functions()[i]);
             _super.push('\n');
         }
     };
 
-// private methods
-    var translate_delta_conf = function (delta_conf_function) {
-        var i;
-
-        _super.push(String.fromCharCode(0x03b4) + 'conf( ');
-        translate_state_vector(delta_conf_function.state());
-        _super.push(', ');
-        translate_input_bag(delta_conf_function.bag());
-        _super.push(' ) = ');
-        if (delta_conf_function instanceof PDevsModel.DeltaConfFunction) {
-            _super.push(')');
-            for (i = 0; i < delta_conf_function.expressions().length; ++i) {
-                _super.translate_arithmetic_expression(delta_conf_function.expressions()[i]);
-                if (i !== delta_conf_function.expressions().length - 1) {
-                    _super.push(', ');
-                }
-            }
-            _super.push(' )');
-            if (delta_conf_function.condition()) {
-                _super.push(' if ');
-                _super.translate_logical_expression(delta_conf_function.condition());
-            }
-        } else {
-            if (delta_conf_function.internal()) {
-                _super.push('delta_ext ( delta_int ( ');
-                translate_state_vector(delta_conf_function.state());
-                _super.push(' ), 0, ');
-                translate_input_bag(delta_conf_function.bag());
-                _super.push(' ) )');
-            } else {
-                _super.push('delta_int ( delta_ext ( ');
-                translate_state_vector(delta_conf_function.state());
-                _super.push(', 0, ');
-                translate_input_bag(delta_conf_function.bag());
-                _super.push(' ) )');
-            }
-        }
+    var translate_coupled_model = function () {
+        translate_ports('X', _super.model().in_ports());
+        translate_ports('Y', _super.model().out_ports());
+        translate_sub_models(_super.model().sub_models());
+        translate_input_connections(_super.model().input_connections());
+        translate_output_connections(_super.model().output_connections());
+        translate_internal_connections(_super.model().internal_connections());
+        _super.push('select =');
     };
 
     var translate_delta_ext = function (delta_ext_function) {
@@ -93,10 +69,10 @@ var Translator = function (model) {
         translate_state_vector(delta_ext_function.state());
         _super.push(', ' + delta_ext_function.e());
         _super.push(' ), ');
-        translate_input_bag(delta_ext_function.bag());
+        translate_input(delta_ext_function.input());
         _super.push(' ) = ( ');
         for (i = 0; i < delta_ext_function.expressions().length; ++i) {
-            _super.translate_arithmetic_expression(delta_ext_function.expressions()[i]);
+            _super.translate_arithmetic_expression(delta_ext_function.expressions()[i])
             if (i !== delta_ext_function.expressions().length - 1) {
                 _super.push(', ');
             }
@@ -127,31 +103,62 @@ var Translator = function (model) {
         }
     };
 
-    var translate_input_bag = function (input_bag) {
-        _super.push('{ ');
-        for (var i = 0; i < input_bag.inputs().length; ++i) {
-            var input = input_bag.inputs()[i];
+    var translate_input = function (input) {
+        if (input.values().length === 0) {
+            _super.push(input.port());
+        } else {
+            var port = input.port();
+            var values = input.values();
 
-            if (input.values().length === 0) {
-                _super.push(input.port());
-            } else {
-                var port = input.port();
-                var values = input.values();
-
-                _super.push('( ' + port + ', { ');
-                for (var j = 0; j < values.length; ++j) {
-                    _super.push(values[j]);
-                    if (j !== values.length - 1) {
-                        _super.push(', ');
-                    }
+            _super.push('( ' + port + ', { ');
+            for (var j = 0; j < values.length; ++j) {
+                _super.push(values[j]);
+                if (j !== values.length - 1) {
+                    _super.push(', ');
                 }
-                _super.push(' } )');
             }
-            if (i !== input_bag.inputs().length - 1) {
+            _super.push(' } )');
+        }
+    };
+
+    var translate_input_connections = function (input_connections) {
+        var i;
+
+        _super.push('EIC = { ');
+        for (i = 0; i < input_connections.length; ++i) {
+            _super.push('( ( N, ');
+            _super.push(input_connections[i].coupled_input_port());
+            _super.push(' ), ( ');
+            _super.push(input_connections[i].inner_model_name());
+            _super.push(', ');
+            _super.push(input_connections[i].inner_input_port());
+            _super.push(' ) )');
+            if (i !== input_connections.length - 1) {
                 _super.push(', ');
             }
         }
-        _super.push(' }');
+        _super.push(' }\n');
+    };
+
+    var translate_internal_connections = function (internal_connections) {
+        var i;
+
+        _super.push('IC = { ');
+        for (i = 0; i < internal_connections.length; ++i) {
+            _super.push('( ( ');
+            _super.push(internal_connections[i].source_model_name());
+            _super.push(', ');
+            _super.push(internal_connections[i].source_output_port());
+            _super.push(' ), ( ');
+            _super.push(internal_connections[i].destination_model_name());
+            _super.push(', ');
+            _super.push(internal_connections[i].destination_input_port());
+            _super.push(' ) )');
+            if (i !== internal_connections.length - 1) {
+                _super.push(', ');
+            }
+        }
+        _super.push(' }\n');
     };
 
     var translate_output = function (output_function) {
@@ -193,6 +200,25 @@ var Translator = function (model) {
             }
         }
         _super.push(' }');
+    };
+
+    var translate_output_connections = function (output_connections) {
+        var i;
+
+        _super.push('EOC = { ');
+        for (i = 0; i < output_connections.length; ++i) {
+            _super.push('( ( ');
+            _super.push(output_connections[i].inner_model_name());
+            _super.push(', ');
+            _super.push(output_connections[i].inner_output_port());
+            _super.push(' ), ( N, ');
+            _super.push(output_connections[i].coupled_output_port());
+            _super.push(' ) )');
+            if (i !== output_connections.length - 1) {
+                _super.push(', ');
+            }
+        }
+        _super.push(' }\n');
     };
 
     var translate_parameters = function (parameter) {
@@ -271,6 +297,22 @@ var Translator = function (model) {
             }
         }
         _super.push(' )');
+    };
+
+    var translate_sub_models = function (sub_models) {
+        var i;
+
+        _super.push('D = { ');
+        for (i = 0; i < sub_models.length; ++i) {
+            _super.push(sub_models[i].name());
+            if (i !== sub_models.length - 1) {
+                _super.push(', ');
+            }
+        }
+        _super.push(' }\n');
+        for (i = 0; i < sub_models.length; ++i) {
+            _super.push('M(' + sub_models[i].name() + ') = ' + sub_models[i].type() + '\n');
+        }
     };
 
     var translate_ta = function (ta_function) {

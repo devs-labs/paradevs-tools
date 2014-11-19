@@ -21,7 +21,7 @@ state: {
 init: {
   phase = passive,
   sigma = +inf,
-  q = 0
+  q = empty_set
 }
 
 delta_int: {
@@ -30,17 +30,18 @@ delta_int: {
 
 delta_ext: {
   (((passive, sigma, q), e), {(in,{[v]})}) -> (busy, processing_time, q),
-  (((phase, sigma, q), e), {(in,{[v]})}) -> (phase, sigma - e, push(q, [v]))
+  (((busy, sigma, q), e), {(in,{[v]})}) -> (busy, sigma - e, push(q, [v])),
+  (((busy, sigma, q), e), {(in,{v1, v2})}) -> (busy, sigma - e, push(q, v))
 }
 
 delta_conf: {
-  ((passive, sigma, q), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, q)), 0, {(in,{[v]})}),
-  ((passive, sigma, q), {(in,{[v]})}) -> delta_int(delta_ext(((phase, sigma, q), 0), {(in,{[v]})}))
+  ((passive, sigma, q), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, q)), 0, {(in,{[v]})})
 }
 
 ta: {
-  (phase, sigma, q) -> +inf
+  (phase, sigma, q) -> sigma
 }
 
 output: {
+  (phase, sigma, q.first) -> {(out, {(out,q.first)})}
 }

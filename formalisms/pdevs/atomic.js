@@ -46,6 +46,7 @@ exports.grammar = {
             ["max\\b", "return 'MAX';"],
             ["min\\b", "return 'MIN';"],
             ["push\\b", "return 'PUSH';"],
+            ["empty_set\\b", "return 'EMPTY_SET';"],
             ["or\\b", "return 'OR';"],
             ["and\\b", "return 'AND';"],
             ["not\\b", "return 'NOT';"],
@@ -86,7 +87,7 @@ exports.grammar = {
     "tokens": "SECTION_NAME SECTION_IN_PORTS SECTION_OUT_PORTS SECTION_PARAMETERS SECTION_STATE SECTION_INIT SECTION_DELTA_INT SECTION_DELTA_EXT SECTION_DELTA_CONF SECTION_TA SECTION_OUTPUT " +
     "; . : { } [ ] -> ( ) + - * / , = _ ID INTEGER REAL INFINITY DEFAULT " +
     "SIN COS TAN COTAN ASIN ACOS ATAN SINH COSH TANH COTANH ASINH ACOSH ATANH " +
-    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH " +
+    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH EMPTY_SET" +
     "OR AND NOT <> < > <= >= " +
     "FIRST LAST",
     "start": "model",
@@ -148,7 +149,8 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=new yy.Expression.Constant(yytext);"]
+            ["ID", "$$=new yy.Expression.Constant(yytext);"],
+            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
         ],
         "section_delta_int": ["SECTION_DELTA_INT : { delta_int_functions }"],
         "delta_int_functions": ["delta_int_functions , delta_int_function", "delta_int_function", ""],
@@ -180,7 +182,7 @@ exports.grammar = {
         ],
         "attribute": [
             ["ID", "$$=$1"],
-            ["[ ID ] ", "$$=$2"]
+            ["[ ID ] ", "$$=[$2]"]
         ],
         "section_delta_conf": ["SECTION_DELTA_CONF : { delta_conf_functions }"],
         "delta_conf_functions": ["delta_conf_functions , delta_conf_function", "delta_conf_function", ""],
@@ -253,7 +255,9 @@ exports.grammar = {
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
             ["ID", "$$=new yy.Expression.Variable(yytext);"],
-            ["[ ID ]", "$$=new yy.Expression.SetVariable($2);"]
+            ["[ ID ]", "$$=new yy.Expression.SetVariable($2);"],
+            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3);"],
+            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
         ],
         "condition": [["[ conditional_expression ]", "$$=$2"]],
         "conditional_expression": [

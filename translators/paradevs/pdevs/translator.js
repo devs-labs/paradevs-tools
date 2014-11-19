@@ -89,7 +89,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code + ';\n';
                 }
             }
             if (list[i].condition()) {
@@ -114,7 +114,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code + ';\n';
                 }
             }
             if (list[i].condition()) {
@@ -139,7 +139,7 @@ var Translator = function (model) {
                 var code = translate_arithmetic_expression(expressions[j]);
 
                 if (state_variable !== code) {
-                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code +';\n';
+                    _code += spaces + translate_arithmetic_expression(state_variable) + ' = ' + code + ';\n';
                 }
             }
             if (list[i].condition()) {
@@ -179,7 +179,7 @@ var Translator = function (model) {
             return expression.to_string();
         } else if (expression.arity() === 1) {
             if (expression.name() === 'not') {
-                return '!(' + translate_logical_expression(expression.get(1)) +')';
+                return '!(' + translate_logical_expression(expression.get(1)) + ')';
             } else if (expression.name() === 'ConditionalExpression') {
                 return translate_logical_expression(expression.get(1));
             } else if (expression.name() === 'ArithmeticExpression') {

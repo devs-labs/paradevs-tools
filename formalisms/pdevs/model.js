@@ -179,7 +179,13 @@ var AtomicModel = function (name) {
         var state_variable = _state.add_state_variable(name, type);
 
         if (state_variable.type() instanceof Model.ConstantType) {
-            _type_table[name] = state_variable.type();
+            _enum_table[name] = state_variable.type();
+        } else if (state_variable.type() instanceof Model.StructType) {
+            _struct_table[name] = state_variable.type();
+        } else if (state_variable.type() instanceof Model.SetType) {
+            if (state_variable.type().type() instanceof Model.StructType) {
+                _struct_table[name] = state_variable.type().type();
+            }
         }
     };
 
@@ -197,6 +203,10 @@ var AtomicModel = function (name) {
 
     this.delta_int_functions = function () {
         return _delta_int_functions;
+    };
+
+    this.enum_table = function () {
+        return _enum_table;
     };
 
     this.init_state_variable = function (name, init) {
@@ -231,19 +241,20 @@ var AtomicModel = function (name) {
         return _state;
     };
 
-    this.ta_functions = function () {
-        return _ta_functions;
+    this.struct_table = function () {
+        return _struct_table;
     };
 
-    this.type_table = function () {
-        return _type_table;
+    this.ta_functions = function () {
+        return _ta_functions;
     };
 
 // private methods
     var init = function (name) {
         _name = name;
         _parameters = [];
-        _type_table = {};
+        _enum_table = {};
+        _struct_table = {};
         _in_ports = [];
         _out_ports = [];
         _state = new Model.State();
@@ -257,7 +268,8 @@ var AtomicModel = function (name) {
 // private attributes
     var _name;
     var _parameters;
-    var _type_table;
+    var _enum_table;
+    var _struct_table;
     var _in_ports;
     var _out_ports;
     var _state;
@@ -274,4 +286,6 @@ if (typeof exports !== 'undefined') {
     exports.AtomicModel = AtomicModel;
     exports.DeltaConfFunction2 = DeltaConfFunction2;
     exports.DeltaConfFunction = DeltaConfFunction;
+    exports.DeltaExtFunction = DeltaExtFunction;
+    exports.DeltaIntFunction = DeltaIntFunction;
 }

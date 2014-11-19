@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "dependencies": {
-        "jison": "^0.4.15"
+        "jison": "^0.4.15",
+        "libxmljs": "^0.12.0"
     }
 }
