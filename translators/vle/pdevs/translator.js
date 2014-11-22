@@ -184,7 +184,7 @@ var Translator = function (model) {
     };
 
     var translate_condition = function (transition_function, spaces) {
-        if (transition_function.condition()) {
+        if (transition_function.condition() && transition_function.condition().get(1).name() !== 'default') {
             _code += spaces + 'if (' + translate_logical_expression(transition_function.condition()) + ') {\n';
             return true;
         } else {
@@ -671,24 +671,42 @@ var Translator = function (model) {
     var translate_ta = function () {
         var list = model.ta_functions();
         var i;
+        var condition_exist;
         var item;
+        var ok = false;
 
         for (i = 0; i < list.length; ++i) {
+            var spaces = '    ';
+
             item = list[i];
-            if (item.condition() && typeof item.condition() !== Expression.Default) {
-                _code += '    if (' + translate_logical_expression(item.condition()) + ') {\n';
-                _code += '      return ' + translate_arithmetic_expression(item.expression()) + ';\n';
-                _code += '    }\n';
+            if (i > 0 && (!item.condition() || (item.condition() && !(item.condition().get(1) instanceof Expression.Default)))) {
+                _code += ' else ';
+                spaces = '';
+            }
+            condition_exist = translate_condition(item, spaces);
+            if (condition_exist) {
+                spaces = '      ';
+                ok = true;
             } else {
-                _code += '    return ' + translate_arithmetic_expression(item.expression()) + ';\n';
+                spaces = '    ';
+            }
+            if (!item.condition() || (item.condition() && !(item.condition().get(1) instanceof Expression.Default))) {
+                _code += spaces + 'return ' + translate_arithmetic_expression(item.expression()) + ';\n';
+            }
+            if (condition_exist) {
+                _code += '    }';
             }
         }
         for (i = 0; i < list.length; ++i) {
             item = list[i];
-            if (item.condition() && typeof item.condition() === Expression.Default) {
-                _code += '    else {\n';
-                _code += '      return ' + translate_arithmetic_expression(item.expression()) + ';\n';
-                _code += '    }\n';
+            if (item.condition() && item.condition().get(1) instanceof Expression.Default) {
+                if (ok) {
+                    _code += ' else {\n';
+                    _code += '      return ' + translate_arithmetic_expression(item.expression()) + ';\n';
+                    _code += '    }\n';
+                } else {
+                    _code += '    return ' + translate_arithmetic_expression(item.expression()) + ';\n';
+                }
             }
         }
     };

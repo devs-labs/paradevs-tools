@@ -30,7 +30,8 @@ delta_conf: { }
 
 ta: {
   (wait) -> time_min,
-  (send) -> 0
+  (send) -> 0,
+  (phase) -> +inf [default]
 }
 
 output: {
