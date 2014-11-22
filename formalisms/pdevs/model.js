@@ -235,6 +235,28 @@ var AtomicModel = function (name) {
         return _state.search(name) !== null;
     };
 
+    this.link_types = function () {
+        for (var i = 0; i < _in_ports.length; ++i) {
+            var types = _in_ports[i].types();
+
+            for (var j = 0; j < types.length; ++j) {
+                var type = types[j][1];
+                var found = false;
+                var type_name;
+
+                for (type_name in _struct_table) {
+                    if (_struct_table[type_name].equal_to(type)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    _in_ports[i].link_to_type(j, type_name);
+                }
+            }
+        }
+    };
+
     this.name = function () {
         return _name;
     };

@@ -113,7 +113,7 @@ exports.grammar = {
             ["port_variables , port_variable", "$$ = $1; $1.push($3);"],
             ["port_variable", "$$=[$1];"]
         ],
-        "port_variable": [["variable_name = variable_def", "$$ = [$1, $3];"]],
+        "port_variable": [["variable_name = variable_def", "$$ = [$1, $3, null];"]],
         "section_state": ["SECTION_STATE : { variables }"],
         "variables": ["variables , variable", "variable"],
         "variable": [["variable_name = variable_def", "yy.model.add_state_variable($1, $3);"]],
@@ -156,7 +156,8 @@ exports.grammar = {
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
             ["ID", "$$=new yy.Expression.Constant(yytext);"],
             ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"],
-            ["[ elements ]", "$$=new yy.Expression.Set($2);"]
+            ["[ elements ]", "$$=new yy.Expression.Set($2);"],
+            ["( elements )", "$$=new yy.Expression.Struct($2);"]
         ],
         "section_delta_int": ["SECTION_DELTA_INT : { delta_int_functions }"],
         "delta_int_functions": ["delta_int_functions , delta_int_function", "delta_int_function", ""],

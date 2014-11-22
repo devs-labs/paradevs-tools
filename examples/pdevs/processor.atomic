@@ -5,43 +5,45 @@ parameters : {
 }
 
 in_ports: {
-  in = {(x=<R>,y=<R>)}
+  in = {v=(x=<R>,y=<R>)}
 }
 
 out_ports: {
-  out = {(x=<R>,y=<R>)}
+  out = {v=(x=<R>,y=<R>)}
 }
 
 state: {
   phase = { passive, busy },
   sigma = < R+ >,
-  q = [(x=<R>,y=<R>)]
+  q = [(x=<R>,y=<R>)],
+  z = (x=<R>,y=<R>)
 }
 
 init: {
   phase = passive,
   sigma = +inf,
-  q = empty_set
+  q = empty_set,
+  z=(0,0)
 }
 
 delta_int: {
-  (phase, sigma, q.first) -> (passive, processing_time, q)
+  (phase, sigma, q.first, z) -> (passive, processing_time, q, z)
 }
 
 delta_ext: {
-  (((passive, sigma, q), e), {(in,{[v]})}) -> (busy, processing_time, q),
-  (((busy, sigma, q), e), {(in,{[v]})}) -> (busy, sigma - e, push(q, [v])),
-  (((busy, sigma, q), e), {(in,{v1, v2})}) -> (busy, sigma - e, push(q, v))
+  (((passive, sigma, q, z), e), {(in,{[v]})}) -> (busy, processing_time, q, z),
+  (((busy, sigma, q, z), e), {(in,{[v]})}) -> (busy, sigma - e, push(q, [v]), z),
+  (((busy, sigma, q, z), e), {(in,{v1, v2})}) -> (busy, sigma - e, push(q, v), z)
 }
 
 delta_conf: {
-  ((passive, sigma, q), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, q)), 0, {(in,{[v]})})
+  ((passive, sigma, q, z), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, q, z)), 0, {(in,{[v]})})
 }
 
 ta: {
-  (phase, sigma, q) -> sigma
+  (phase, sigma, q, z) -> sigma
 }
 
 output: {
-  (phase, sigma, q.first) -> {(out, {(out,q.first)})}
+  (phase, sigma, q.first, z) -> {(out, {(out,q.first)})}
 }

@@ -30,6 +30,7 @@ var Translator = function (model) {
 
     this.translate = function () {
         if (_model instanceof PDevsModel.AtomicModel) {
+            _model.link_types();
             translate_atomic_model();
         } else {
             translate_coupled_model();
@@ -75,6 +76,8 @@ var Translator = function (model) {
             t = [ 'double', 'Double' ];
         } else if (type instanceof Model.IntegerType) {
             t = [ 'int', 'Integer' ];
+        } else if (type instanceof Model.StructType) {
+            t = [ 'map', 'Map' ];
         } else {
             // TODO
         }
@@ -294,12 +297,10 @@ var Translator = function (model) {
     };
 
     var translate_enum_table = function () {
-        var k = 0;
-
         for (var name in _model.enum_table()) {
             var type = _model.enum_table()[name];
 
-            _code += '  enum enum_' + k + ' { ';
+            _code += '  enum enum_' + name + ' { ';
             for (var j = 0; j < type.size(); ++j) {
                 _code += type.get(j);
                 if (j !== type.size() - 1) {
@@ -307,9 +308,8 @@ var Translator = function (model) {
                 }
             }
             _code += ' };\n';
-            ++k;
         }
-        if (k > 0) {
+        if (Object.keys(_model.enum_table()).length > 0) {
             _code += '\n';
         }
     };
@@ -317,15 +317,22 @@ var Translator = function (model) {
     var translate_init = function () {
         for (var i = 0; i < _model.state().size(); ++i) {
             var variable = _model.state().state_variable(i);
+            var values, j;
 
             if (variable.type() instanceof Model.SetType) {
                 if (variable.init() instanceof Expression.EmptySet) {
                     _code += '    // ' + variable.name() + ' = empty set\n';
                 } else if (variable.init() instanceof Expression.Set) {
-                    var values = variable.init().values();
-
-                    for (var j = 0; j < values.length; ++j) {
+                    values = variable.init().values();
+                    for (j = 0; j < values.length; ++j) {
                         _code += '    ' + variable.name() + '.push_back(' + values[j].to_string() + ');\n';
+                    }
+                }
+            } else if (variable.type() instanceof Model.StructType) {
+                if (variable.init() instanceof Expression.Struct) {
+                    values = variable.init().values();
+                    for (j = 0; j < values.length; ++j) {
+                        _code += '    ' + variable.name() + '.' + variable.type().get(j)[0] + ' = ' + values[j].to_string() + ';\n';
                     }
                 }
             } else {
@@ -355,6 +362,20 @@ var Translator = function (model) {
             } else {
                 return translate_logical_expression(expression.get(1)) + ' ' + expression.name() + ' ' + translate_logical_expression(expression.get(2));
             }
+        }
+    };
+
+    var translate_map_to_struct = function (port_name, get_request, spaces) {
+        var struct_name = 'struct_' + _model.in_port(port_name).types()[0][2];
+        var attributes = _model.in_port(port_name).types()[0][1].attributes();
+
+        _code += spaces + '    ' + struct_name + ' value;\n';
+        _code += spaces + '    const vle::value::Map& input_value = ' + get_request;
+        _code += '\n';
+        for (var i = 0; i < attributes.length; ++i) {
+            var type = get_type(attributes[i][1]);
+
+            _code += spaces + '    value.' + attributes[i][0] + ' = vle::value::to' + type[1] + '(input_value["' + attributes[i][0] +'"]);\n';
         }
     };
 
@@ -580,14 +601,25 @@ var Translator = function (model) {
                 _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
                 '(events[0]->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
                 _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
-                _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
+                if (type[0] === 'map') {
+                    translate_map_to_struct(transition_function.bag().inputs()[i].port(), 'vle::value::toMap(set->get(i));\n', spaces);
+                } else {
+                    _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
+                }
                 _code += spaces + '    ' + state_variable_definition.name() + '.push_back(value);\n';
                 _code += spaces + '  }\n';
             } else {
                 for (var j = 0; j < transition_function.bag().inputs()[i].values().length; ++j) {
                     type = get_type(state_variable_definition.type().type());
-                    _code += spaces + '    ' + type[0] + ' value = events[' + i + ']->get' + type[1] + 'AttributeValue(' + transition_function.bag().inputs()[i].values()[j] + ');\n';
-                    _code += spaces + '  ' + state_variable_definition.name() + '.push_back(value);\n';
+                    if (type[0] === 'map') {
+                        _code += spaces + '  {\n';
+                        translate_map_to_struct(transition_function.bag().inputs()[i].port(), 'events[' + i + ']->getMapAttributeValue(' + transition_function.bag().inputs()[i].values()[j] + ');\n', spaces);
+                        _code += spaces + '    ' + state_variable_definition.name() + '.push_back(value);\n';
+                        _code += spaces + '  }\n';
+                    } else {
+                        _code += spaces + '    ' + type[0] + ' value = events[' + i + ']->get' + type[1] + 'AttributeValue(' + transition_function.bag().inputs()[i].values()[j] + ');\n';
+                        _code += spaces + '    ' + state_variable_definition.name() + '.push_back(value);\n';
+                    }
                 }
             }
             _code += spaces + '}\n';
@@ -595,19 +627,15 @@ var Translator = function (model) {
     };
 
     var translate_state = function () {
-        var k_enum = 0;
-        var k_struct = 0;
         var i;
 
         for (i = 0; i < _model.state().state_variables().length; ++i) {
             var variable = _model.state().state_variables()[i];
 
             if (variable.type() instanceof Model.ConstantType) {
-                translate_type(variable.name(), variable.type(), k_enum);
-                ++k_enum;
+                translate_type(variable.name(), variable.type());
             } else if (variable.type() instanceof Model.StructType || (variable.type() instanceof Model.SetType && variable.type().type() instanceof Model.StructType)) {
-                translate_type(variable.name(), variable.type(), k_struct);
-                ++k_struct;
+                translate_type(variable.name(), variable.type());
             } else {
                 translate_type(variable.name(), variable.type());
             }
@@ -618,12 +646,10 @@ var Translator = function (model) {
     };
 
     var translate_struct_table = function () {
-        var k = 0;
-
         for (var name in _model.struct_table()) {
             var type = _model.struct_table()[name];
 
-            _code += '  struct struct_' + k + ' {\n';
+            _code += '  struct struct_' + name + ' {\n';
             for (var j = 0; j < type.size(); ++j) {
                 _code += '    ';
                 if (type.get(j)[1] instanceof Model.RealType) {
@@ -635,9 +661,8 @@ var Translator = function (model) {
                 _code += ';\n';
             }
             _code += '  };\n';
-            ++k;
         }
-        if (k > 0) {
+        if (Object.keys(_model.struct_table()).length > 0) {
             _code += '\n';
         }
     };
@@ -667,13 +692,13 @@ var Translator = function (model) {
         }
     };
 
-    var translate_type = function (name, type, k) {
+    var translate_type = function (name, type) {
         if (type instanceof Model.RealType) {
             _code += '  double ' + name + ';\n';
         } else if (type instanceof Model.IntegerType) {
             _code += '  int ' + name + ';\n';
         } else if (type instanceof Model.ConstantType) {
-            _code += '  enum_' + k + ' ' + name + ';\n';
+            _code += '  enum_' + name + ' ' + name + ';\n';
         } else if (type instanceof  Model.SetType) {
             _code += '  std::vector < ';
             if (type.type() instanceof Model.RealType) {
@@ -681,11 +706,11 @@ var Translator = function (model) {
             } else if (type.type() instanceof Model.IntegerType) {
                 _code += 'int';
             } else if (type.type() instanceof Model.StructType) {
-                _code += 'struct_' + k;
+                _code += 'struct_' + name;
             }
             _code += ' > ' + name + ';\n';
         } else if (type instanceof  Model.StructType) {
-            // TODO
+            _code += '  struct_' + name + ' ' + name + ';\n';
         }
     };
 
