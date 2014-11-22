@@ -1,0 +1,38 @@
+name : Generator;
+
+parameters : {
+  time_min : < R+ > = 2,
+  time_max : < R+ > = 5
+}
+
+in_ports: { }
+
+out_ports: {
+  out = {v=<R>}
+}
+
+state: {
+  phase = { wait, send }
+}
+
+init: {
+  phase = wait
+}
+
+delta_int: {
+  (wait) -> (send),
+  (send) -> (wait)
+}
+
+delta_ext: { }
+
+delta_conf: { }
+
+ta: {
+  (wait) -> time_min,
+  (send) -> 0
+}
+
+output: {
+  (send) -> {(out, {(out,1)})}
+}

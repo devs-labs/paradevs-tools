@@ -1,5 +1,5 @@
 {
-  "root": "processor2.atomic",
+  "root": "generator.atomic",
   "formalism": "pdevs",
   "target": "vle"
 }

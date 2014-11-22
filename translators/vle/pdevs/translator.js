@@ -282,15 +282,15 @@ var Translator = function (model) {
         for (var i = 0; i < list.length; ++i) {
             var expressions = list[i].expressions();
             var spaces = '    ';
+            var condition_exist = translate_condition(list[i], spaces);
 
-            if (list[i].condition()) {
-                _code += '    if (' + translate_logical_expression(list[i].condition()) + ') {\n';
+            if (condition_exist) {
                 spaces += '  ';
             }
             for (var j = 0; j < expressions.length; ++j) {
                 translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces);
             }
-            if (list[i].condition()) {
+            if (condition_exist) {
                 _code += '    }\n';
             }
         }
