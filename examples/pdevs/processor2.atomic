@@ -25,12 +25,11 @@ init: {
 }
 
 delta_int: {
-  (phase, sigma, queue.first) -> (passive, processing_time, queue),
-  (phase, sigma, queue) -> (passive, processing_time, [1,2])
+  (phase, sigma, queue.first) -> (passive, processing_time, queue)
 }
 
 delta_ext: {
-  (((passive, sigma, queue), e), {(in,{v1}), (in,{v2})}) -> (busy, processing_time, [v]),
+  (((passive, sigma, queue), e), {(in,{[v]})}) -> (busy, processing_time, [v]),
   (((busy, sigma, queue), e), {(in,{[v]})}) -> (busy, sigma - e, push(queue, [v]))
 }
 

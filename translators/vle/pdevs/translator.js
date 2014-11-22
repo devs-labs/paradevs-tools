@@ -385,7 +385,8 @@ var Translator = function (model) {
         for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
             _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
             if (transition_function.bag().inputs()[i].values()[0] instanceof Array) {
-                if (expression.get(1) instanceof Expression.SetVariable && transition_function.bag().inputs()[i].values()[0][0] === expression.get(1).name()) {
+                if ((expression.get(1) instanceof Expression.SetVariable && transition_function.bag().inputs()[i].values()[0][0] === expression.get(1).name()) ||
+                    (expression.get(1) instanceof Expression.Set && transition_function.bag().inputs()[i].values()[0][0] === expression.get(1).values()[0].name())) {
                     type = get_type(state_variable_definition.type().type());
                     _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
                     '(events['+ i + ']->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
