@@ -37,6 +37,65 @@ var Translator = function (model) {
     };
 
 // private methods
+    var check_variables_in_expression = function (data, expression) {
+        var found = false;
+        var i = 0;
+
+        while (!found && i < data.length) {
+            if (expression.search_variable(data[i])) {
+                found = true;
+            } else {
+                ++i;
+            }
+        }
+        return found;
+    };
+
+    var declare_variables = function (inputs, expression, spaces) {
+        for (var i = 0; i < inputs.length; ++i) {
+            var event = inputs[i];
+            var port = _model.in_port(event.port());
+            var found = check_variables_in_expression(event.values(), expression);
+            if (found) {
+                for (j = 0; j < event.values().length; ++j) {
+                    var variable = event.values()[j];
+                    var type = get_type(port.types()[j][1]);
+
+                    _code += spaces + '  ' + type[0] + ' ' + variable + ';\n';
+                }
+            }
+        }
+        _code += '\n';
+    };
+
+    var get_type = function (type) {
+        var t;
+
+        if (type instanceof Model.RealType) {
+            t = [ 'double', 'Double' ];
+        } else if (type instanceof Model.IntegerType) {
+            t = [ 'int', 'Integer' ];
+        } else {
+            // TODO
+        }
+        return t;
+    };
+
+    var is_same_port = function (inputs) {
+        var same = true;
+        var i = 1;
+        var name = inputs[0].port();
+
+        while (same && i < inputs.length) {
+            if (name !== inputs[i].port()) {
+                same = false;
+            } else {
+                ++i;
+            }
+        }
+        return same;
+    };
+
     var translate_arithmetic_expression = function (expression) {
         if (expression.arity() === 0) {
             if (expression instanceof Expression.Infinity) {
@@ -51,7 +110,9 @@ var Translator = function (model) {
                 return expression.to_string();
             }
         } else if (expression.arity() === 1) {
-            if (expression.name() === 'BAR') {
+            if (expression.name() === 'Bracket') {
+                return '(' + translate_arithmetic_expression(expression.get(1)) + ')';
+            } else if (expression.name() === 'BAR') {
                 return 'std::fabs(' + translate_arithmetic_expression(expression.get(1)) + ')';
             } else if (expression.name() === 'ArithmeticExpression') {
                 return translate_arithmetic_expression(expression.get(1));
@@ -91,13 +152,9 @@ var Translator = function (model) {
         translate_delta_int();
         _code += '  }\n\n' +
         '  virtual void externalTransition(const vle::devs::ExternalEventList& events, const vle::devs::Time& t)\n' +
-        '  {\n' +
-        '    vle::devs::ExternalEventList::const_iterator it = events.begin();\n\n' +
-        '    while (it != events.end()) {\n' +
-        '      const vle::devs::ExternalEvent& event = **it;\n\n';
+        '  {\n';
         translate_delta_ext();
-        _code += '      ++it;\n';
-        _code += '    }\n  }\n\n' +
+        _code += '  }\n\n' +
         '  virtual void confluentTransitions(const vle::devs::Time& t, const vle::devs::ExternalEventList& events)\n' +
         '  {\n';
         translate_delta_conf();
@@ -140,8 +197,6 @@ var Translator = function (model) {
     };
 
     var translate_coupled_model = function () {
-        var vpz;
-
         var xml = '<?xml version="1.0" encoding="UTF-8" ?>' +
             '<!DOCTYPE vle_project PUBLIC "-//VLE TEAM//DTD Strict//EN" "http://www.vle-project.org/vle-1.2.0.dtd">' +
             '<vle_project version="1.0.0" date="" author="">' +
@@ -203,17 +258,17 @@ var Translator = function (model) {
 
         for (var i = 0; i < list.length; ++i) {
             var expressions = list[i].expressions();
-            var spaces = '      ';
+            var spaces = '    ';
             var condition_exist = translate_condition(list[i], spaces);
 
             if (condition_exist) {
                 spaces += '  ';
             }
             for (var j = 0; j < expressions.length; ++j) {
-                translate_expression(list[i], j, expressions[j], spaces);
+                translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces);
             }
             if (condition_exist) {
-                _code += '      }\n';
+                _code += '    }\n';
             }
         }
     };
@@ -230,7 +285,7 @@ var Translator = function (model) {
                 spaces += '  ';
             }
             for (var j = 0; j < expressions.length; ++j) {
-                translate_expression(list[i], j, expressions[j], spaces);
+                translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces);
             }
             if (list[i].condition()) {
                 _code += '    }\n';
@@ -259,62 +314,6 @@ var Translator = function (model) {
         }
     };
 
-    var translate_expression = function (transition_function, index, expression, spaces) {
-        var state_variable = transition_function.state().state_variable(index);
-        var s = _model.state().state_variable(index);
-
-        if (s.type() instanceof Model.SetType && state_variable instanceof Expression.SetVariable) {
-            if (state_variable.position() === 'first') {
-                _code += spaces + state_variable.name() + '.erase(' + state_variable.name() + '.begin());\n';
-            } else {
-                _code += spaces + state_variable.name() + '.pop_back();\n';
-            }
-        } else {
-            if ((transition_function instanceof PDevsModel.DeltaExtFunction  || transition_function instanceof PDevsModel.DeltaConfFunction) && s.type() instanceof Model.SetType) {
-                if (expression.get(1) instanceof Expression.Function2 && expression.get(1).name() === 'push') {
-                    for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
-                        _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
-
-                        if (transition_function.bag().inputs()[i].values()[0] instanceof Array) {
-                            _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
-                            '(ee->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
-                            _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
-                            // TODO: convert set->get(i)
-                            _code += spaces + '    ' + s.name() + '.push_back(set->get(i));\n';
-                            _code += spaces + '  }\n';
-                        } else {
-                            for (var j = 0; j < transition_function.bag().inputs()[i].values().length; ++j) {
-                                // TODO: convert value
-                                _code += spaces + '  ' + s.name() + '.push_back(ee->getAttributeValue(' + transition_function.bag().inputs()[i].values()[j] + '));\n';
-                            }
-                        }
-                        _code += spaces + '}\n';
-                    }
-                } else {
-                    // TODO
-                }
-            } else {
-                var variable = translate_arithmetic_expression(state_variable);
-                var code = translate_arithmetic_expression(expression);
-
-                if (variable !== code) {
-                    if (transition_function instanceof PDevsModel.DeltaExtFunction || transition_function instanceof PDevsModel.DeltaConfFunction) {
-                        for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
-                            _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '") {\n';
-                            // TODO: convert value and fix type
-                            _code += spaces + '  double ' + transition_function.bag().inputs()[i].values()[0] + ' = ee->getAttributeValue("' +
-                                transition_function.bag().inputs()[i].values()[0] + '");\n\n'
-                            _code += spaces + '  ' + s.name() + ' = ' + code + ';\n';
-                            _code += spaces + '}\n';
-                        }
-                    } else {
-                        _code += spaces + s.name() + ' = ' + code + ';\n';
-                    }
-                }
-            }
-        }
-    };
-
     var translate_init = function () {
         for (var i = 0; i < _model.state().size(); ++i) {
             var variable = _model.state().state_variable(i);
@@ -322,8 +321,12 @@ var Translator = function (model) {
             if (variable.type() instanceof Model.SetType) {
                 if (variable.init() instanceof Expression.EmptySet) {
                     _code += '    // ' + variable.name() + ' = empty set\n';
-                } else {
-                    // TODO
+                } else if (variable.init() instanceof Expression.Set) {
+                    var values = variable.init().values();
+
+                    for (var j = 0; j < values.length; ++j) {
+                        _code += '    ' + variable.name() + '.push_back(' + values[j].to_string() + ');\n';
+                    }
                 }
             } else {
                 _code += '    ' + variable.name() + ' = ' + translate_arithmetic_expression(variable.init()) + ';\n';
@@ -355,18 +358,164 @@ var Translator = function (model) {
         }
     };
 
-    var translate_output = function () {
-        var list = _model.output_functions();
+    var translate_new_set = function (transition_function, state_variable_definition, expression, spaces) {
+        var type;
 
-        for (var i = 0; i < list.length; ++i) {
+        for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
+            _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
+            if (transition_function.bag().inputs()[i].values()[0] instanceof Array) {
+                if (expression.get(1) instanceof Expression.SetVariable && transition_function.bag().inputs()[i].values()[0][0] === expression.get(1).name()) {
+                    type = get_type(state_variable_definition.type().type());
+                    _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
+                    '(events['+ i + ']->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
+                    _code += spaces + '  ' + state_variable_definition.name() + '.clear();\n';
+                    _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
+                    _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
+                    _code += spaces + '    ' + state_variable_definition.name() + '.push_back(value);\n';
+                    _code += spaces + '  }\n';
+                }
+            } else {
+                for (var j = 0; j < transition_function.bag().inputs()[i].values().length; ++j) {
+                    type = get_type(state_variable_definition.type().type());
+                    _code += spaces + '  ' + type[0] + ' value = events[' + i + ']->get' + type[1] + 'AttributeValue(' + transition_function.bag().inputs()[i].values()[j] + ');\n';
+                    _code += spaces + '  ' + state_variable_definition.name() + '.push_back(value);\n';
+                }
+            }
+            _code += spaces + '}\n';
+        }
+    };
+
+    var translate_new_state = function (state_variable_definition, transition_function, previous_state_variable, expression, spaces) {
+        var i, j;
+
+        // new state is not same to state variable name
+        if (!(expression.get(1) instanceof Expression.Variable && expression.get(1).name() === state_variable_definition.name() &&
+            previous_state_variable instanceof Expression.Variable && previous_state_variable.name() === state_variable_definition.name())) {
+            if (state_variable_definition.type() instanceof Model.SetType) {
+                if (previous_state_variable instanceof Expression.SetVariable) {
+                    if (previous_state_variable.position() === 'first') {
+                        _code += spaces + previous_state_variable.name() + '.erase(' + previous_state_variable.name() + '.begin());\n';
+                    } else { // last
+                        _code += spaces + previous_state_variable.name() + '.pop_back();\n';
+                    }
+                } else {
+                    if ((transition_function instanceof PDevsModel.DeltaExtFunction || transition_function instanceof PDevsModel.DeltaConfFunction)) {
+                        if (expression.get(1) instanceof Expression.Function2 && expression.get(1).name() === 'push') {
+                            translate_push(transition_function, state_variable_definition, spaces);
+                        } else {
+                            translate_new_set(transition_function, state_variable_definition, expression, spaces);
+                        }
+                    } else {
+                        if (expression.get(1) instanceof Expression.EmptySet) {
+                            _code += spaces + previous_state_variable.name() + '.clear();\n';
+                        } else if (expression.get(1) instanceof Expression.Set) {
+                            var values = expression.get(1).values();
+
+                            for (j = 0; j < values.length; ++j) {
+                                _code += spaces + state_variable_definition.name() + '.push_back(' + values[j].to_string() + ');\n';
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (transition_function instanceof PDevsModel.DeltaExtFunction || transition_function instanceof PDevsModel.DeltaConfFunction) {
+                    var event, found;
+                    var k = 0;
+
+                    for (i = 0; i < transition_function.bag().inputs().length; ++i) {
+                        event = transition_function.bag().inputs()[i];
+                        found = check_variables_in_expression(event.values(), expression);
+                        if (found) {
+                            ++k;
+                        }
+                    }
+                    if (k > 0) {
+                        var variable, port, type;
+
+                        if (transition_function.bag().inputs().length > 1) {
+                            _code += spaces + '{\n';
+                            if (is_same_port(transition_function.bag().inputs())) {
+                                var unique_port = transition_function.bag().inputs()[0].port();
+
+                                declare_variables(transition_function.bag().inputs(), expression, spaces);
+                                for (i = 0; i < transition_function.bag().inputs().length; ++i) {
+                                    event = transition_function.bag().inputs()[i];
+                                    port = _model.in_port(event.port());
+                                    found = check_variables_in_expression(event.values(), expression);
+                                    if (found) {
+                                        for (j = 0; j < event.values().length; ++j) {
+                                            _code += spaces + '  if (events[' + i + ']->onPort("' + unique_port + '")) {\n';
+                                            variable = event.values()[j];
+                                            type = get_type(port.types()[j][1]);
+                                            _code += spaces + '    ' + variable + ' = events[' + i + ']->get' + type[1] + 'AttributeValue("' + port.types()[j][0] + '");\n'
+                                            _code += spaces + '  }\n';
+                                        }
+                                    }
+                                }
+                                _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
+                            } else {
+                                declare_variables(transition_function.bag().inputs(), expression, spaces);
+                                _code += spaces + '  vle::devs::ExternalEventList::const_iterator it = events.begin();\n';
+                                _code += spaces + '  while (it != events.end()) {\n';
+                                for (i = 0; i < transition_function.bag().inputs().length; ++i) {
+                                    event = transition_function.bag().inputs()[i];
+                                    port = _model.in_port(event.port());
+                                    found = check_variables_in_expression(event.values(), expression);
+                                    if (found) {
+                                        _code += spaces + '    if ((*it)->onPort("' + event.port() + '")) {\n';
+                                        for (j = 0; j < event.values().length; ++j) {
+                                            variable = event.values()[j];
+                                            type = get_type(port.types()[j][1]);
+                                            _code += spaces + '      ' + variable + ' = (*it)->get' + type[1] + 'AttributeValue("' + port.types()[j][0] + '");\n'
+                                        }
+                                        _code += spaces + '    }\n';
+                                    }
+                                }
+                                _code += spaces + '    ++it;\n';
+                                _code += spaces + '  }\n';
+                                _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
+                            }
+                        } else {
+                            event = transition_function.bag().inputs()[0];
+                            port = _model.in_port(event.port());
+                            found = check_variables_in_expression(event.values(), expression);
+                            if (found) {
+                                _code += spaces + 'if (events[0]->onPort("' + event.port() + '")) {\n';
+                                for (j = 0; j < event.values().length; ++j) {
+                                    variable = event.values()[j];
+                                    type = get_type(port.types()[j][1]);
+                                    _code += spaces + '  ' + type[0] + ' ' + variable + ' = events[0]->get' + type[1] + 'AttributeValue("' + port.types()[j][0]+ '");\n'
+                                }
+                                _code += '\n';
+                                _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
+                            }
+                        }
+                    } else {
+                        _code += spaces + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
+                    }
+                    if (k > 0) {
+                        _code += spaces + '}\n';
+                    }
+                } else {
+                    _code += spaces + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
+                }
+            }
+        }
+    };
+
+    var translate_output = function () {
+        var output_functions = _model.output_functions();
+
+        for (var i = 0; i < output_functions.length; ++i) {
+            var output_function = output_functions[i];
             var spaces = '    ';
 
-            if (list[i].condition()) {
-                _code += '    if (' + translate_logical_expression(list[i].condition()) + ') {\n';
+            if (output_function.condition()) {
+                _code += '    if (' + translate_logical_expression(output_function.condition()) + ') {\n';
                 spaces += '  ';
             }
-            for (var j = 0; j < list[i].bag().outputs().length; ++j) {
-                var output = list[i].bag().outputs()[j];
+            for (var j = 0; j < output_function.bag().outputs().length; ++j) {
+                var output = output_function.bag().outputs()[j];
 
                 if (typeof output === 'string') {
                     _code += spaces + 'output.push_back(new vle::devs::ExternalEvent(';
@@ -379,16 +528,23 @@ var Translator = function (model) {
                     _code += spaces + '{\n';
                     _code += spaces + '  vle::devs::ExternalEvent* ee = new vle::devs::ExternalEvent("' + port + '");\n\n';
                     for (var k = 0; k < attributes.length; ++k) {
+                        var attribute_type = attributes[k][1].type();
+
                         _code += spaces + '  ee << vle::devs::attribute(';
-                        //TODO: verify type
-                        _code += '"' + attributes[k][0] + '", ' + translate_arithmetic_expression(attributes[k][1]);
+                        _code += '"' + attributes[k][0] + '", ';
+                        if (attribute_type instanceof Model.RealType || attribute_type instanceof Model.IntegerType || attribute_type === null) {
+                            _code += translate_arithmetic_expression(attributes[k][1]);
+                        } else {
+                            // TODO
+                            _code += '???';
+                        }
                         _code += ');\n'
                     }
                     _code += spaces + '  output.push_back(ee);\n';
                     _code += spaces + '}\n';
                 }
             }
-            if (list[i].condition()) {
+            if (output_functions[i].condition()) {
                 _code += '    }\n';
             }
         }
@@ -410,6 +566,31 @@ var Translator = function (model) {
             var variable = _model.parameters()[i];
 
             _code += '    ' + variable.name() + ' = events.exist("' + variable.name() + '") ? events.get("' + variable.name() + '") : ' + translate_arithmetic_expression(variable.value()) + ';\n';
+        }
+    };
+
+    var translate_push = function (transition_function, state_variable_definition, spaces) {
+        var type;
+
+        for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
+            _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
+
+            if (transition_function.bag().inputs()[i].values()[0] instanceof Array) {
+                type = get_type(state_variable_definition.type().type());
+                _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
+                '(events[0]->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
+                _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
+                _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
+                _code += spaces + '    ' + state_variable_definition.name() + '.push_back(value);\n';
+                _code += spaces + '  }\n';
+            } else {
+                for (var j = 0; j < transition_function.bag().inputs()[i].values().length; ++j) {
+                    type = get_type(state_variable_definition.type().type());
+                    _code += spaces + '    ' + type[0] + ' value = events[' + i + ']->get' + type[1] + 'AttributeValue(' + transition_function.bag().inputs()[i].values()[j] + ');\n';
+                    _code += spaces + '  ' + state_variable_definition.name() + '.push_back(value);\n';
+                }
+            }
+            _code += spaces + '}\n';
         }
     };
 
@@ -502,7 +683,7 @@ var Translator = function (model) {
             } else if (type.type() instanceof Model.StructType) {
                 _code += 'struct_' + k;
             }
-            _code += ' > ' + name + '\n';
+            _code += ' > ' + name + ';\n';
         } else if (type instanceof  Model.StructType) {
             // TODO
         }

@@ -100,15 +100,20 @@ exports.grammar = {
         "section_in_ports": ["SECTION_IN_PORTS : { in_ports }"],
         "in_ports": ["in_ports , in_port", "in_port", ""],
         "in_port": [
-            ["ID = { variable_defs }", "yy.model.add_in_port($1, $4);"],
+            ["ID = { port_variables }", "yy.model.add_in_port($1, $4);"],
             ["ID = { }", "yy.model.add_in_port($1, []);"]
         ],
         "section_out_ports": ["SECTION_OUT_PORTS : { out_ports }"],
         "out_ports": ["out_ports , out_port", "out_port", ""],
         "out_port": [
-            ["ID = { variable_defs }", "yy.model.add_out_port($1, $4);"],
+            ["ID = { port_variables }", "yy.model.add_out_port($1, $4);"],
             ["ID = { }", "yy.model.add_out_port($1, []);"]
         ],
+        "port_variables": [
+            ["port_variables , port_variable", "$$ = $1; $1.push($3);"],
+            ["port_variable", "$$=[$1];"]
+        ],
+        "port_variable": [["variable_name = variable_def", "$$ = [$1, $3];"]],
         "section_state": ["SECTION_STATE : { variables }"],
         "variables": ["variables , variable", "variable"],
         "variable": [["variable_name = variable_def", "yy.model.add_state_variable($1, $3);"]],
@@ -136,7 +141,7 @@ exports.grammar = {
         "attribute_def": [
             ["ID = variable_def", "$$=[$1, $3];"]
         ],
-        "variable_name": [["ID", "$$=yytext;"]],
+        "variable_name": [["ID", "$$=$1;"]],
         "symbols": [
             ["symbols , symbol", "$$ = $1; $1.push($3);"],
             ["symbol", "$$ = [$1];"]
@@ -150,7 +155,8 @@ exports.grammar = {
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
             ["ID", "$$=new yy.Expression.Constant(yytext);"],
-            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
+            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"],
+            ["[ elements ]", "$$=new yy.Expression.Set($2);"]
         ],
         "section_delta_int": ["SECTION_DELTA_INT : { delta_int_functions }"],
         "delta_int_functions": ["delta_int_functions , delta_int_function", "delta_int_function", ""],
@@ -204,11 +210,11 @@ exports.grammar = {
             ["", "$$=[];"]
         ],
         "state_variable": [
-            ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
-            ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
+            ["INTEGER", "$$=new yy.Expression.Integer(Number($1));"],
+            ["REAL", "$$=new yy.Expression.Real(Number($1));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=yy.model.is_state_variable(yytext) ? new yy.Expression.Variable(yytext) : new yy.Expression.Constant(yytext);"],
-            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3);"]
+            ["ID", "$$=yy.model.is_state_variable($1) ? new yy.Expression.Variable($1, yy.model.state_variable_type($1)) : new yy.Expression.Constant($1);"],
+            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3, yy.model.state_variable_type($1));"]
         ],
         "position": [ "FIRST", "LAST" ],
         "arithmetic_expressions": [
@@ -254,10 +260,19 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=new yy.Expression.Variable(yytext);"],
-            ["[ ID ]", "$$=new yy.Expression.SetVariable($2);"],
-            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3);"],
+            ["ID", "$$=new yy.Expression.Variable($1, yy.model.is_state_variable($1) ? yy.model.state_variable_type($1) : null);"],
+            ["[ elements ]", "$$=new yy.Expression.Set($2);"],
+            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3, yy.model.state_variable_type($1));"],
             ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
+        ],
+        "elements": [
+            ["elements , element", "$$=$1; $1.push($3);"],
+            ["element", "$$=[$1];"]
+        ],
+        "element": [
+            ["INTEGER", "$$=new yy.Expression.Integer(Number($1));"],
+            ["REAL", "$$=new yy.Expression.Real(Number($1));"],
+            ["ID", "$$=new yy.Expression.Variable($1,null);"]
         ],
         "condition": [["[ conditional_expression ]", "$$=$2"]],
         "conditional_expression": [

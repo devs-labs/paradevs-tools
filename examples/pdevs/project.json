@@ -1,5 +1,5 @@
 {
   "root": "example1.atomic",
   "formalism": "pdevs",
-  "target": "vle"
+  "target": "text"
 }

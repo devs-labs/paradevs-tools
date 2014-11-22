@@ -1,0 +1,47 @@
+name : Processor2;
+
+parameters : {
+  processing_time : < R+ > = 10
+}
+
+in_ports: {
+  in = {v=<R>}
+}
+
+out_ports: {
+  out = {v=<R>}
+}
+
+state: {
+  phase = { passive, busy },
+  sigma = < R+ >,
+  queue = [<R>]
+}
+
+init: {
+  phase = passive,
+  sigma = +inf,
+  queue = empty_set
+}
+
+delta_int: {
+  (phase, sigma, queue.first) -> (passive, processing_time, queue),
+  (phase, sigma, queue) -> (passive, processing_time, [1,2])
+}
+
+delta_ext: {
+  (((passive, sigma, queue), e), {(in,{v1}), (in,{v2})}) -> (busy, processing_time, [v]),
+  (((busy, sigma, queue), e), {(in,{[v]})}) -> (busy, sigma - e, push(queue, [v]))
+}
+
+delta_conf: {
+  ((passive, sigma, queue), {(in,{[v]})}) -> delta_ext(delta_int((phase, sigma, queue)), 0, {(in,{[v]})})
+}
+
+ta: {
+  (phase, sigma, queue) -> sigma
+}
+
+output: {
+  (phase, sigma, queue.first) -> {(out, {(out,queue.first)})}
+}

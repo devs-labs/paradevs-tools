@@ -8,13 +8,13 @@ parameters : {
 
 in_ports: {
   in = {},
-  in1 = {< R+ >},
-  in2 = {< R+ >, < R+ >}
+  in1 = {qty=< R+ >},
+  in2 = {a=< R+ >, b=< R+ >}
 }
 
 out_ports: {
   out = {},
-  out1 = {< R+ >, < N >}
+  out1 = {a=< R+ >, b=< N >}
 }
 
 state: {
@@ -33,10 +33,11 @@ delta_int: {
 }
 
 delta_ext: {
-  (((RH, Phase), t_e), {in1, in2}) -> (RH + qty, Phase),
-  (((RH, Phase), t_e), {(in,{qty})}) -> (RH + qty, Phase),
-  (((RH, Phase), t_e), {(in1,{ab, cd})}) -> (RH + qty, Phase),
-  (((RH, Phase), t_e), {(in1,{ab, cd}), (in2,{ij, kl})}) -> (RH + qty, Phase)
+  (((RH, Phase), e), {in}) -> (RH + 1, Phase),
+  (((RH, Phase), e), {(in1,{qty})}) -> (RH + qty, Phase),
+  (((RH, Phase), e), {(in1,{qty1}),(in1,{qty2})}) -> (RH + qty1 + qty2, Phase),
+  (((RH, Phase), e), {(in2,{ab, cd})}) -> (RH + ab + cd, Phase),
+  (((RH, Phase), e), {(in1,{ab}), (in2,{ij, kl})}) -> (RH + ab - (ij + kl), Phase)
 }
 
 delta_conf: {
@@ -49,7 +50,7 @@ ta: {
 
 output: {
   (RH, Phase) -> {out1, out2},
-  (RH, Phase) -> {(out, {(RH,RH)})},
+  (RH, Phase) -> {(out, {(RH,RH + 1)})},
   (RH, Phase) -> {(out, {(ab,ab),(cd,cd)})},
   (RH, Phase) -> {(out1, {(ab,ab),(cd,cd)}), (out2, {(ab,ab),(cd,cd)})}
 }

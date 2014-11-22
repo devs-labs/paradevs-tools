@@ -57,7 +57,7 @@ var Translator = function (model) {
         translate_input_bag(delta_conf_function.bag());
         _super.push(' ) = ');
         if (delta_conf_function instanceof PDevsModel.DeltaConfFunction) {
-            _super.push(')');
+            _super.push('( ');
             for (i = 0; i < delta_conf_function.expressions().length; ++i) {
                 _super.translate_arithmetic_expression(delta_conf_function.expressions()[i]);
                 if (i !== delta_conf_function.expressions().length - 1) {
@@ -212,13 +212,17 @@ var Translator = function (model) {
             _super.push('( ');
             _super.push(port.name());
             if (port.types().length > 0) {
-                _super.push(', ');
+                _super.push(', { ');
                 for (var j = 0; j < port.types().length; ++j) {
-                    _super.translate_type(port.types()[j]);
+                    _super.push(port.types()[j][0] + ' ' + String.fromCharCode(0x2208) + ' ');
+                    _super.translate_type(port.types()[j][1]);
                     if (j !== port.types().length - 1) {
-                        _super.push('x');
+                        _super.push(', ');
+                    } else {
+                        _super.push(' ');
                     }
                 }
+                _super.push('}');
             }
             _super.push(' )');
             if (i !== n - 1) {

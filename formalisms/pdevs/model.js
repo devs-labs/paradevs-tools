@@ -217,6 +217,20 @@ var AtomicModel = function (name) {
         return _in_ports;
     };
 
+    this.in_port = function (name) {
+        var found = false;
+        var i = 0;
+
+        while (!found && i < _in_ports.length) {
+            if (_in_ports[i].name() === name) {
+                found = true;
+            } else {
+                ++i;
+            }
+        }
+        return found ? _in_ports[i] : null;
+    };
+
     this.is_state_variable = function (name) {
         return _state.search(name) !== null;
     };
@@ -229,6 +243,20 @@ var AtomicModel = function (name) {
         return _out_ports;
     };
 
+    this.out_port = function (name) {
+        var found = false;
+        var i = 0;
+
+        while (!found && i < _out_ports.length) {
+            if (_out_ports[i].name() === name) {
+                found = true;
+            } else {
+                ++i;
+            }
+        }
+        return found ? _out_ports[i] : null;
+    };
+
     this.output_functions = function () {
         return _output_functions;
     };
@@ -239,6 +267,16 @@ var AtomicModel = function (name) {
 
     this.state = function () {
         return _state;
+    };
+
+    this.state_variable_type = function (name) {
+        var type = _state.search(name).type();
+
+        if (type instanceof Model.SetType) {
+            return type.type();
+        } else {
+            return type;
+        }
     };
 
     this.struct_table = function () {
