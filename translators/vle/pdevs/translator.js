@@ -38,9 +38,16 @@ var Translator = function (model, generator) {
             var xmlDoc = init_coupled_model();
 
             translate_root_model(xmlDoc);
-
-            console.log(xmlDoc.toString());
+            _code = xmlDoc.toString();
         }
+    };
+
+    this.write_to = function (output_directory) {
+        var extension = (_model instanceof PDevsModel.AtomicModel) ? '.cpp' : '.vpz';
+
+        fs.writeFile(require('path').normalize(output_directory + '/' + _model.name() + extension), _code, function (err) {
+            if (err) throw err;
+        });
     };
 
 // private methods

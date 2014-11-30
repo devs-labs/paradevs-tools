@@ -29,7 +29,7 @@ var Generator = function (project) {
             var translator = new Translator(_models[name], this);
 
             translator.translate();
-            console.log(translator.code());
+            translator.write_to(project.output);
         }
     };
 

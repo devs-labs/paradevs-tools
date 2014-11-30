@@ -1,5 +1,6 @@
 {
   "root": "example.coupled",
   "formalism": "pdevs",
-  "target": "vle"
+  "target": "vle",
+  "output": "./output"
 }
