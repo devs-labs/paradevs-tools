@@ -3,6 +3,8 @@ var Model = require('./../../../lib/model');
 var PDevsModel = require('./../../../formalisms/pdevs/model');
 var libxmljs = require("libxmljs");
 var fs = require('fs');
+var AtomicGenerator = require('./../../../lib/atomic_generator');
+var CoupledGenerator = require('./../../../lib/coupled_generator');
 
 var functions = {
     'sin': 'sin',
@@ -22,7 +24,7 @@ var functions = {
     'sqrt': 'sqrt'
 };
 
-var Translator = function (model) {
+var Translator = function (model, generator) {
 // public methods
     this.code = function () {
         return _code;
@@ -33,7 +35,11 @@ var Translator = function (model) {
             _model.link_types();
             translate_atomic_model();
         } else {
-            translate_coupled_model();
+            var xmlDoc = init_coupled_model();
+
+            translate_root_model(xmlDoc);
+
+            console.log(xmlDoc.toString());
         }
     };
 
@@ -73,11 +79,11 @@ var Translator = function (model) {
         var t;
 
         if (type instanceof Model.RealType) {
-            t = [ 'double', 'Double' ];
+            t = ['double', 'Double'];
         } else if (type instanceof Model.IntegerType) {
-            t = [ 'int', 'Integer' ];
+            t = ['int', 'Integer'];
         } else if (type instanceof Model.StructType) {
-            t = [ 'map', 'Map' ];
+            t = ['map', 'Map'];
         } else {
             // TODO
         }
@@ -199,7 +205,7 @@ var Translator = function (model) {
         return false;
     };
 
-    var translate_coupled_model = function () {
+    var init_coupled_model = function () {
         var xml = '<?xml version="1.0" encoding="UTF-8" ?>' +
             '<!DOCTYPE vle_project PUBLIC "-//VLE TEAM//DTD Strict//EN" "http://www.vle-project.org/vle-1.2.0.dtd">' +
             '<vle_project version="1.0.0" date="" author="">' +
@@ -207,7 +213,7 @@ var Translator = function (model) {
             '<model name="Top model" type="coupled" />' +
             '</structures>' +
             '<dynamics></dynamics>' +
-            '<experiment name="xxx" combination="linear">' +
+            '<experiment name="exp" combination="linear">' +
             '<conditions />' +
             '<views> ' +
             '<outputs />' +
@@ -216,9 +222,118 @@ var Translator = function (model) {
             '</experiment>' +
             '</vle_project>';
 
-        var xmlDoc = libxmljs.parseXml(xml);
+        return libxmljs.parseXml(xml);
+    };
 
-        console.log(xmlDoc.toString());
+    var translate_ports = function (ports, submodel_node, ports_node, xmlDoc) {
+        submodel_node.addChild(ports_node);
+        for (var i = 0; i < ports.length; ++i) {
+            var port_node = new libxmljs.Element(xmlDoc, 'port');
+
+            port_node.attr({'name': ports[i].name()});
+            ports_node.addChild(port_node);
+        }
+    };
+
+    var translate_sub_model = function (model, xmlDoc) {
+        var submodel_node = new libxmljs.Element(xmlDoc, 'model');
+        var generator;
+
+        submodel_node.attr({
+            'name': model.name(),
+            'type': model.is_atomic() ? 'atomic' : 'coupled',
+            'dynamics': 'dyn_' + model.type()
+        });
+
+        var model2 = _generator.model(model.type());
+
+        translate_ports(model2.in_ports(), submodel_node, new libxmljs.Element(xmlDoc, 'in'), xmlDoc);
+        translate_ports(model2.out_ports(), submodel_node, new libxmljs.Element(xmlDoc, 'out'), xmlDoc);
+        return submodel_node;
+    };
+
+    var translate_root_model = function (xmlDoc) {
+        var project_node = xmlDoc.root();
+        var structure_node = project_node.childNodes()[0];
+        var model_node = structure_node.childNodes()[0];
+
+        model_node.attr('name').value(_model.name());
+        translate_coupled_model(_model, model_node, xmlDoc)
+    };
+
+    var translate_connections = function (model, connections_node, xmlDoc) {
+        var i;
+        var connection_node;
+        var origin_node;
+        var destination_node;
+        var connection;
+
+        for(i = 0; i < model.internal_connections().length; ++i) {
+            connection_node = new libxmljs.Element(xmlDoc, 'connection');
+            origin_node = new libxmljs.Element(xmlDoc, 'origin');
+            destination_node = new libxmljs.Element(xmlDoc, 'destination');
+            connection = model.internal_connections()[i];
+            origin_node.attr({
+                'model': connection.source_model_name(),
+                'port': connection.source_output_port()
+            });
+            connection_node.addChild(origin_node);
+            destination_node.attr({
+                'model': connection.destination_model_name(),
+                'port': connection.destination_input_port()
+            });
+            connection_node.addChild(destination_node);
+            connection_node.attr({'type': 'internal'});
+            connections_node.addChild(connection_node);
+        }
+        for(i = 0; i < model.input_connections().length; ++i) {
+            connection_node = new libxmljs.Element(xmlDoc, 'connection');
+            origin_node = new libxmljs.Element(xmlDoc, 'origin');
+            destination_node = new libxmljs.Element(xmlDoc, 'destination');
+            connection = model.input_connections()[i];
+            origin_node.attr({
+                'model': model.name(),
+                'port': connection.coupled_input_port()
+            });
+            connection_node.addChild(origin_node);
+            destination_node.attr({
+                'model': connection.inner_model_name(),
+                'port': connection.inner_input_port()
+            });
+            connection_node.addChild(destination_node);
+            connection_node.attr({'type': 'input'});
+            connections_node.addChild(connection_node);
+        }
+        for(i = 0; i < model.output_connections().length; ++i) {
+            connection_node = new libxmljs.Element(xmlDoc, 'connection');
+            origin_node = new libxmljs.Element(xmlDoc, 'origin');
+            destination_node = new libxmljs.Element(xmlDoc, 'destination');
+            connection = model.output_connections()[i];
+            origin_node.attr({
+                'model': connection.inner_model_name(),
+                'port': connection.inner_output_port()
+            });
+            connection_node.addChild(origin_node);
+            destination_node.attr({
+                'model': model.name(),
+                'port': connection.coupled_output_port()
+            });
+            connection_node.addChild(destination_node);
+            connection_node.attr({'type': 'input'});
+            connections_node.addChild(connection_node);
+        }
+    };
+
+    var translate_coupled_model = function (model, model_node, xmlDoc) {
+        var submodels_node = new libxmljs.Element(xmlDoc, 'submodels');
+        var connections_node = new libxmljs.Element(xmlDoc, 'connections');
+
+        model_node.addChild(submodels_node);
+        model_node.addChild(connections_node);
+        translate_connections(model, connections_node, xmlDoc);
+        for (var i = 0; i < model.sub_models().length; ++i) {
+            submodels_node.addChild(translate_sub_model(model.sub_models()[i], xmlDoc));
+        }
     };
 
     var translate_delta_conf = function () {
@@ -375,7 +490,7 @@ var Translator = function (model) {
         for (var i = 0; i < attributes.length; ++i) {
             var type = get_type(attributes[i][1]);
 
-            _code += spaces + '    value.' + attributes[i][0] + ' = vle::value::to' + type[1] + '(input_value["' + attributes[i][0] +'"]);\n';
+            _code += spaces + '    value.' + attributes[i][0] + ' = vle::value::to' + type[1] + '(input_value["' + attributes[i][0] + '"]);\n';
         }
     };
 
@@ -389,7 +504,7 @@ var Translator = function (model) {
                     (expression.get(1) instanceof Expression.Set && transition_function.bag().inputs()[i].values()[0][0] === expression.get(1).values()[0].name())) {
                     type = get_type(state_variable_definition.type().type());
                     _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
-                    '(events['+ i + ']->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
+                    '(events[' + i + ']->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
                     _code += spaces + '  ' + state_variable_definition.name() + '.clear();\n';
                     _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
                     _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
@@ -506,7 +621,7 @@ var Translator = function (model) {
                                 for (j = 0; j < event.values().length; ++j) {
                                     variable = event.values()[j];
                                     type = get_type(port.types()[j][1]);
-                                    _code += spaces + '  ' + type[0] + ' ' + variable + ' = events[0]->get' + type[1] + 'AttributeValue("' + port.types()[j][0]+ '");\n'
+                                    _code += spaces + '  ' + type[0] + ' ' + variable + ' = events[0]->get' + type[1] + 'AttributeValue("' + port.types()[j][0] + '");\n'
                                 }
                                 _code += '\n';
                                 _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
@@ -734,16 +849,18 @@ var Translator = function (model) {
     };
 
 // private methods
-    var init = function (model) {
+    var init = function (model, generator) {
         _code = '';
         _model = model;
+        _generator = generator;
     };
 
 // private attributes
     var _model;
+    var _generator;
     var _code;
 
-    init(model);
+    init(model, generator);
 };
 
 module.exports = Translator;

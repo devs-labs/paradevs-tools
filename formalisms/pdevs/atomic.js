@@ -313,7 +313,8 @@ exports.grammar = {
         ],
         "output": [
             ["ID", "$$=$1;"],
-            ["( ID , { attributes2 } )", "$$=[$2,$5];"]
+            ["( ID , { attributes2 } )", "$$=[$2,$5];"],
+            ["( ID , { } )", "$$=[$2,[]];"]
         ],
         "attributes2": [
             ["attributes2 , attribute2", "$$=$1; $1.push($3);"],

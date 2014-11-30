@@ -1,0 +1,26 @@
+name : Example;
+
+in_ports: { }
+
+out_ports: { }
+
+sub_models: {
+  A1 = generator < atomic >,
+  A2 = generator < atomic >,
+  A3 = generator < atomic >,
+  A4 = generator < atomic >,
+  B = counter < atomic >
+}
+
+input_connections: { }
+
+output_connections: { }
+
+internal_connections: {
+  (A1,out) -> (B,in),
+  (A2,out) -> (B,in),
+  (A3,out) -> (B,in),
+  (A4,out) -> (B,in)
+}
+
+select:

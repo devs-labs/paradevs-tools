@@ -1,0 +1,38 @@
+name : Counter;
+
+parameters : { }
+
+in_ports: { in = {} }
+
+out_ports: { out = { x=< N > } }
+
+state: {
+  phase = { passive, active },
+  count = < R+ >
+}
+
+init: {
+  phase = passive,
+  count = 0
+}
+
+delta_int: {
+  (active, count) -> (passive, count)
+}
+
+delta_ext: {
+  (((passive, count), e), {(in, {x})}) -> (active, count + 1)
+}
+
+delta_conf: {
+  ((passive, counter), {(in,{x})}) -> delta_ext(delta_int((phase, counter)), 0, {(in,{x})})
+}
+
+ta: {
+  (passive, count) -> +inf,
+  (active, count) -> 0
+}
+
+output: {
+  (active, count) -> {(out, {(value, count)})}
+}

@@ -1,5 +1,5 @@
 {
-  "root": "generator.atomic",
+  "root": "example.coupled",
   "formalism": "pdevs",
   "target": "vle"
 }

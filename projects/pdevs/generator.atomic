@@ -8,7 +8,7 @@ parameters : {
 in_ports: { }
 
 out_ports: {
-  out = {v=<R>}
+  out = {}
 }
 
 state: {
@@ -35,5 +35,5 @@ ta: {
 }
 
 output: {
-  (send) -> {(out, {(out,1)})}
+  (send) -> {(out, {})}
 }
