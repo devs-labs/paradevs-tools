@@ -4,15 +4,19 @@ var PDevsModel = require('./../../../formalisms/pdevs/model');
 var TextTranslator = require('./../../../lib/translator/text_translator');
 var fs = require('fs');
 
-var Translator = function (model, generator) {
+var Translator = function (name, model, generator) {
 // private attributes
     var _super = new TextTranslator(model);
+    var _name = name;
     var _generator = generator;
 
 // public methods
     this.code = _super.code;
 
-    this.translate = function () {
+    this.init = function (output_directory) {
+    };
+
+    this.translate = function (extras) {
         if (_super.model() instanceof PDevsModel.AtomicModel) {
             var i;
             var n;
@@ -295,8 +299,12 @@ var Translator = function (model, generator) {
         _super.push(' ) = ');
         _super.translate_arithmetic_expression(ta_function.expression());
         if (ta_function.condition()) {
-            _super.push(' if ');
-            _super.translate_logical_expression(ta_function.condition());
+            if (ta_function.condition().get(1) instanceof Expression.Default) {
+                _super.push(' default');
+            } else {
+                _super.push(' if ');
+                _super.translate_logical_expression(ta_function.condition());
+            }
         }
     };
 };

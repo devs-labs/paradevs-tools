@@ -1,0 +1,7 @@
+{
+  "name": "Example",
+  "root": "example.coupled",
+  "formalism": "pdevs",
+  "target": "text",
+  "output": "./output"
+}
