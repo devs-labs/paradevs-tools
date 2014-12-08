@@ -24,10 +24,20 @@ var functions = {
     'sqrt': 'sqrt'
 };
 
-var Translator = function (model, generator) {
+var Translator = function (name, model, generator) {
 // public methods
     this.code = function () {
         return _code;
+    };
+
+    this.init = function (output_directory) {
+        make_package(_name, output_directory);
+        fs.unlink(require('path').normalize(output_directory + '/' + _name + '/exp/empty.vpz'), function (err) {
+            if (err) throw err;
+        });
+        fs.unlink(require('path').normalize(output_directory + '/' + _name + '/src/Simple.cpp'), function (err) {
+            if (err) throw err;
+        });
     };
 
     this.translate = function () {
@@ -45,9 +55,15 @@ var Translator = function (model, generator) {
     this.write_to = function (output_directory) {
         var extension = (_model instanceof PDevsModel.AtomicModel) ? '.cpp' : '.vpz';
 
-        fs.writeFile(require('path').normalize(output_directory + '/' + _model.name() + extension), _code, function (err) {
-            if (err) throw err;
-        });
+        if (_model instanceof PDevsModel.AtomicModel) {
+            fs.writeFile(require('path').normalize(output_directory + '/' + _name + '/src/' + _model.name() + extension), _code, function (err) {
+                if (err) throw err;
+            });
+        } else {
+            fs.writeFile(require('path').normalize(output_directory + '/' + _name + '/exp/' + _model.name() + extension), _code, function (err) {
+                if (err) throw err;
+            });
+        }
     };
 
 // private methods
@@ -112,6 +128,21 @@ var Translator = function (model, generator) {
         return same;
     };
 
+    var make_package = function (name, output_directory) {
+        var vle = require('./wrapper/build/Release/vlejs');
+        var new_dir = require('path').normalize(process.cwd() + '/' + output_directory);
+        var old_dir = process.cwd();
+
+        try {
+            process.chdir(new_dir);
+        }
+        catch (err) {
+            console.log(err);
+        }
+        vle.create('-P', name, 'create');
+        process.chdir(old_dir);
+    };
+
     var translate_arithmetic_expression = function (expression) {
         if (expression.arity() === 0) {
             if (expression instanceof Expression.Infinity) {
@@ -152,6 +183,10 @@ var Translator = function (model, generator) {
 
     var translate_atomic_model = function () {
         _code += '#include <vle/devs/Dynamics.hpp>\n\n';
+        _code += '/*\n';
+        _code += '* @@tagdynamic@@\n';
+        _code += '* @@tagdepends:@@endtagdepends\n';
+        _code += '*/\n';
         _code += 'class ' + _model.name() + ' : public vle::devs::Dynamics\n' +
         '{\n' +
         'public:\n' +
@@ -193,7 +228,8 @@ var Translator = function (model, generator) {
         translate_struct_table();
         translate_state();
         translate_parameters();
-        _code += '};\n';
+        _code += '};\n\n';
+        _code += 'DECLARE_DYNAMICS(' + _model.name() + ');\n';
     };
 
     var translate_condition = function (transition_function, spaces) {
@@ -212,10 +248,27 @@ var Translator = function (model, generator) {
         return false;
     };
 
+    var translate_dynamics = function (dynamics_node, xmlDoc) {
+        for (var type in _generator.models()) {
+            var model = _generator.model(type);
+
+            if (model instanceof PDevsModel.AtomicModel) {
+                var dynamic_node = new libxmljs.Element(xmlDoc, 'dynamic');
+
+                dynamic_node.attr({
+                    'name': 'dyn_' + type,
+                    'library': model.name(),
+                    'package': _name
+                });
+                dynamics_node.addChild(dynamic_node);
+            }
+        }
+    };
+
     var init_coupled_model = function () {
         var xml = '<?xml version="1.0" encoding="UTF-8" ?>' +
             '<!DOCTYPE vle_project PUBLIC "-//VLE TEAM//DTD Strict//EN" "http://www.vle-project.org/vle-1.2.0.dtd">' +
-            '<vle_project version="1.0.0" date="" author="">' +
+            '<vle_project version="1.0.0" date="" author="xxx">' +
             '<structures>' +
             '<model name="Top model" type="coupled" />' +
             '</structures>' +
@@ -263,9 +316,11 @@ var Translator = function (model, generator) {
         var project_node = xmlDoc.root();
         var structure_node = project_node.childNodes()[0];
         var model_node = structure_node.childNodes()[0];
+        var dynamics_node = project_node.childNodes()[1];
 
         model_node.attr('name').value(_model.name());
         translate_coupled_model(_model, model_node, xmlDoc)
+        translate_dynamics(dynamics_node, xmlDoc);
     };
 
     var translate_connections = function (model, connections_node, xmlDoc) {
@@ -709,7 +764,13 @@ var Translator = function (model, generator) {
         for (var i = 0; i < _model.parameters().length; ++i) {
             var variable = _model.parameters()[i];
 
-            _code += '    ' + variable.name() + ' = events.exist("' + variable.name() + '") ? events.get("' + variable.name() + '") : ' + translate_arithmetic_expression(variable.value()) + ';\n';
+            _code += '    ' + variable.name() + ' = events.exist("' + variable.name() + '") ? ';
+            if (variable.type() instanceof Model.RealType) {
+                _code += 'vle::value::toDouble';
+            } else if (variable.type() instanceof Model.IntegerType) {
+                _code += 'vle::value::toInteger';
+            }
+            _code += '(events.get("' + variable.name() + '")) : ' + translate_arithmetic_expression(variable.value()) + ';\n';
         }
     };
 
@@ -856,18 +917,20 @@ var Translator = function (model, generator) {
     };
 
 // private methods
-    var init = function (model, generator) {
+    var init = function (name, model, generator) {
         _code = '';
+        _name = name;
         _model = model;
         _generator = generator;
     };
 
 // private attributes
+    var _name;
     var _model;
     var _generator;
     var _code;
 
-    init(model, generator);
+    init(name, model, generator);
 };
 
 module.exports = Translator;

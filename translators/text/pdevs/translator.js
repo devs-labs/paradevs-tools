@@ -2,49 +2,61 @@ var Expression = require('./../../../lib/expression');
 var Model = require('./../../../lib/model');
 var PDevsModel = require('./../../../formalisms/pdevs/model');
 var TextTranslator = require('./../../../lib/translator/text_translator');
+var fs = require('fs');
 
-var Translator = function (model) {
+var Translator = function (model, generator) {
 // private attributes
     var _super = new TextTranslator(model);
+    var _generator = generator;
 
 // public methods
     this.code = _super.code;
 
     this.translate = function () {
-        var i;
-        var n;
+        if (_super.model() instanceof PDevsModel.AtomicModel) {
+            var i;
+            var n;
 
-        _super.push('parameters = { ');
-        for (i = 0; i < _super.model().parameters().length; ++i) {
-            translate_parameters(_super.model().parameters()[i]);
-            if (i !== _super.model().parameters().length - 1) {
-                _super.push(', ');
+            _super.push('parameters = { ');
+            for (i = 0; i < _super.model().parameters().length; ++i) {
+                translate_parameters(_super.model().parameters()[i]);
+                if (i !== _super.model().parameters().length - 1) {
+                    _super.push(', ');
+                }
             }
+            _super.push(' }\n');
+            translate_ports('X', _super.model().in_ports());
+            translate_ports('Y', _super.model().out_ports());
+            translate_state(_super.model().state());
+            for (i = 0; i < _super.model().ta_functions().length; ++i) {
+                translate_ta(_super.model().ta_functions()[i]);
+                _super.push('\n');
+            }
+            for (i = 0; i < _super.model().delta_ext_functions().length; ++i) {
+                translate_delta_ext(_super.model().delta_ext_functions()[i]);
+                _super.push('\n');
+            }
+            for (i = 0; i < _super.model().delta_int_functions().length; ++i) {
+                translate_delta_int(_super.model().delta_int_functions()[i]);
+                _super.push('\n');
+            }
+            for (i = 0; i < _super.model().delta_conf_functions().length; ++i) {
+                translate_delta_conf(_super.model().delta_conf_functions()[i]);
+                _super.push('\n');
+            }
+            for (i = 0; i < _super.model().output_functions().length; ++i) {
+                translate_output(_super.model().output_functions()[i]);
+                _super.push('\n');
+            }
+        } else {
+            // TODO
         }
-        _super.push(' }\n');
-        translate_ports('X', _super.model().in_ports());
-        translate_ports('Y', _super.model().out_ports());
-        translate_state(_super.model().state());
-        for (i = 0; i < _super.model().ta_functions().length; ++i) {
-            translate_ta(_super.model().ta_functions()[i]);
-            _super.push('\n');
-        }
-        for (i = 0; i < _super.model().delta_ext_functions().length; ++i) {
-            translate_delta_ext(_super.model().delta_ext_functions()[i]);
-            _super.push('\n');
-        }
-        for (i = 0; i < _super.model().delta_int_functions().length; ++i) {
-            translate_delta_int(_super.model().delta_int_functions()[i]);
-            _super.push('\n');
-        }
-        for (i = 0; i < _super.model().delta_conf_functions().length; ++i) {
-            translate_delta_conf(_super.model().delta_conf_functions()[i]);
-            _super.push('\n');
-        }
-        for (i = 0; i < _super.model().output_functions().length; ++i) {
-            translate_output(_super.model().output_functions()[i]);
-            _super.push('\n');
-        }
+    };
+
+    this.write_to = function (output_directory) {
+        fs.writeFile(require('path').normalize(output_directory + '/' + _super.model().name() + '.txt'), _super.code(), function (err) {
+            if (err) throw err;
+        });
     };
 
 // private methods

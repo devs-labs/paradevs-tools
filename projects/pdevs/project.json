@@ -1,6 +1,11 @@
 {
+  "name": "Example",
   "root": "example.coupled",
   "formalism": "pdevs",
   "target": "vle",
-  "output": "./output"
+  "output": "./output",
+  "extra": {
+    "duration": "10",
+    "begin": "0"
+  }
 }

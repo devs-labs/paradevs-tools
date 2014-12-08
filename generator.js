@@ -26,15 +26,26 @@ var Generator = function (project) {
         var Translator = require('./translators/' + project.target + '/' + project.formalism + '/translator');
 
         for (var name in _models) {
-            var translator = new Translator(_models[name], this);
+            var translator = new Translator(project.name, _models[name], this);
 
             translator.translate();
             translator.write_to(project.output);
         }
     };
 
+    this.init = function () {
+        var Translator = require('./translators/' + project.target + '/' + project.formalism + '/translator');
+        var translator = new Translator(project.name, null, this);
+
+        translator.init(project.output);
+    };
+
     this.model = function (type) {
         return _models[type];
+    };
+
+    this.models = function () {
+        return _models;
     };
 
     this.parse = function () {
@@ -70,6 +81,7 @@ exports.main = function main() {
 
                 generator.parse();
                 generator.check();
+                generator.init();
                 generator.generate();
             });
         }
