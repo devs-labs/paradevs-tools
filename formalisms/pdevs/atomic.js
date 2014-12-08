@@ -46,6 +46,7 @@ exports.grammar = {
             ["max\\b", "return 'MAX';"],
             ["min\\b", "return 'MIN';"],
             ["push\\b", "return 'PUSH';"],
+            ["uniform\\b", "return 'UNIFORM';"],
             ["empty_set\\b", "return 'EMPTY_SET';"],
             ["or\\b", "return 'OR';"],
             ["and\\b", "return 'AND';"],
@@ -87,7 +88,7 @@ exports.grammar = {
     "tokens": "SECTION_NAME SECTION_IN_PORTS SECTION_OUT_PORTS SECTION_PARAMETERS SECTION_STATE SECTION_INIT SECTION_DELTA_INT SECTION_DELTA_EXT SECTION_DELTA_CONF SECTION_TA SECTION_OUTPUT " +
     "; . : { } [ ] -> ( ) + - * / , = _ ID INTEGER REAL INFINITY DEFAULT " +
     "SIN COS TAN COTAN ASIN ACOS ATAN SINH COSH TANH COTANH ASINH ACOSH ATANH " +
-    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH EMPTY_SET" +
+    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH UNIFORM EMPTY_SET" +
     "OR AND NOT <> < > <= >= " +
     "FIRST LAST",
     "start": "model",
@@ -255,7 +256,7 @@ exports.grammar = {
             "SQRT"
         ],
         "binary_function": [
-            "LOG", "POW", "MAX", "MIN", "PUSH"
+            "LOG", "POW", "MAX", "MIN", "PUSH", "UNIFORM"
         ],
         "litteral": [
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],

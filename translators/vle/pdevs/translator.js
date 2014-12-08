@@ -173,6 +173,10 @@ var Translator = function (name, model, generator) {
                 return 'std::' + expression.name() + '(' + translate_arithmetic_expression(expression.get(1)) + ', ' + translate_arithmetic_expression(expression.get(2)) + ')';
             } else if (expression.name() === "POW") {
                 return 'std::pow(' + translate_arithmetic_expression(expression.get(1)) + ', ' + translate_arithmetic_expression(expression.get(2)) + ')';
+            } else if (expression.name() === "uniform") {
+                var min = translate_arithmetic_expression(expression.get(1));
+                var max = translate_arithmetic_expression(expression.get(2))
+                return '(double)rand() / RAND_MAX * (' + max + ' - ' + min + ') + ' + min;
             } else {
                 return translate_arithmetic_expression(expression.get(1)) + ' ' + expression.name() + ' ' + translate_arithmetic_expression(expression.get(2));
             }

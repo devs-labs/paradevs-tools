@@ -29,7 +29,7 @@ delta_ext: { }
 delta_conf: { }
 
 ta: {
-  (wait) -> time_min,
+  (wait) -> uniform(time_min, time_max),
   (send) -> 0,
   (phase) -> +inf [default]
 }
