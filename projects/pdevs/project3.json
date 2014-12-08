@@ -1,0 +1,7 @@
+{
+  "name": "Example",
+  "root": "passive.atomic",
+  "formalism": "pdevs",
+  "target": "text",
+  "output": "./output"
+}

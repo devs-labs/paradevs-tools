@@ -1,0 +1,23 @@
+name : Passive;
+
+parameters : { }
+
+in_ports: { }
+
+out_ports: { }
+
+state: { }
+
+init: { }
+
+delta_int: { }
+
+delta_ext: { }
+
+delta_conf: { }
+
+ta: {
+  () -> +inf [default]
+}
+
+output: { }
