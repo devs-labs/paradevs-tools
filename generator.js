@@ -28,7 +28,7 @@ var Generator = function (project) {
         for (var name in _models) {
             var translator = new Translator(project.name, _models[name], this);
 
-            translator.translate();
+            translator.translate(project.extras);
             translator.write_to(project.output);
         }
     };

@@ -3,8 +3,6 @@ var Model = require('./../../../lib/model');
 var PDevsModel = require('./../../../formalisms/pdevs/model');
 var libxmljs = require("libxmljs");
 var fs = require('fs');
-var AtomicGenerator = require('./../../../lib/atomic_generator');
-var CoupledGenerator = require('./../../../lib/coupled_generator');
 
 var functions = {
     'sin': 'sin',
@@ -40,14 +38,14 @@ var Translator = function (name, model, generator) {
         });
     };
 
-    this.translate = function () {
+    this.translate = function (extras) {
         if (_model instanceof PDevsModel.AtomicModel) {
             _model.link_types();
             translate_atomic_model();
         } else {
             var xmlDoc = init_coupled_model();
 
-            translate_root_model(xmlDoc);
+            translate_root_model(extras, xmlDoc);
             _code = xmlDoc.toString();
         }
     };
@@ -312,7 +310,7 @@ var Translator = function (name, model, generator) {
         return submodel_node;
     };
 
-    var translate_root_model = function (xmlDoc) {
+    var translate_root_model = function (extras, xmlDoc) {
         var project_node = xmlDoc.root();
         var structure_node = project_node.childNodes()[0];
         var model_node = structure_node.childNodes()[0];
@@ -321,6 +319,16 @@ var Translator = function (name, model, generator) {
         model_node.attr('name').value(_model.name());
         translate_coupled_model(_model, model_node, xmlDoc)
         translate_dynamics(dynamics_node, xmlDoc);
+        translate_extras(extras, project_node, xmlDoc);
+    };
+
+    var translate_extras = function(extras, project_node, xmlDoc) {
+        var experiment_node = project_node.childNodes()[2];
+
+        experiment_node.attr({
+            'duration': extras.duration,
+            'begin': extras.begin
+        });
     };
 
     var translate_connections = function (model, connections_node, xmlDoc) {
