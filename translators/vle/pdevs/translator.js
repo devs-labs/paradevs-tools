@@ -180,7 +180,8 @@ var Translator = function (name, model, generator) {
     };
 
     var translate_atomic_model = function () {
-        _code += '#include <vle/devs/Dynamics.hpp>\n\n';
+        _code += '#include <vle/devs/Dynamics.hpp>\n';
+        _code += '#include <vle/devs/DynamicsDbg.hpp>\n\n';
         _code += '/*\n';
         _code += '* @@tagdynamic@@\n';
         _code += '* @@tagdepends:@@endtagdepends\n';
@@ -227,7 +228,7 @@ var Translator = function (name, model, generator) {
         translate_state();
         translate_parameters();
         _code += '};\n\n';
-        _code += 'DECLARE_DYNAMICS(' + _model.name() + ');\n';
+        _code += 'DECLARE_DYNAMICS_DBG(' + _model.name() + ');\n';
     };
 
     var translate_condition = function (transition_function, spaces) {
@@ -271,7 +272,7 @@ var Translator = function (name, model, generator) {
             '<model name="Top model" type="coupled" />' +
             '</structures>' +
             '<dynamics></dynamics>' +
-            '<experiment name="exp" combination="linear">' +
+            '<experiment name="exp" seed="9928947">' +
             '<conditions />' +
             '<views> ' +
             '<outputs />' +
@@ -324,11 +325,21 @@ var Translator = function (name, model, generator) {
 
     var translate_extras = function(extras, project_node, xmlDoc) {
         var experiment_node = project_node.childNodes()[2];
+        var conditions_node = experiment_node.childNodes()[0];
+        var condition_node = new libxmljs.Element(xmlDoc, 'condition');
+        var duration_port_node = new libxmljs.Element(xmlDoc, 'port');
+        var duration_value_node = new libxmljs.Element(xmlDoc, 'double', extras.duration);
+        var begin_port_node = new libxmljs.Element(xmlDoc, 'port');
+        var begin_value_node = new libxmljs.Element(xmlDoc, 'double', extras.begin);
 
-        experiment_node.attr({
-            'duration': extras.duration,
-            'begin': extras.begin
-        });
+        duration_port_node.attr({ 'name': 'duration' });
+        duration_port_node.addChild(duration_value_node);
+        begin_port_node.attr({ 'name': 'begin' });
+        begin_port_node.addChild(begin_value_node);
+        condition_node.addChild(duration_port_node);
+        condition_node.addChild(begin_port_node);
+        condition_node.attr({ 'name': 'simulation_engine' });
+        conditions_node.addChild(condition_node);
     };
 
     var translate_connections = function (model, connections_node, xmlDoc) {
@@ -476,7 +487,11 @@ var Translator = function (name, model, generator) {
                 translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces);
             }
             if (condition_exist) {
-                _code += '    }\n';
+                if (i != list.length - 1) {
+                    _code += '    } else ';
+                } else {
+                    _code += '    }\n';
+                }
             }
         }
     };
@@ -716,9 +731,9 @@ var Translator = function (name, model, generator) {
         for (var i = 0; i < output_functions.length; ++i) {
             var output_function = output_functions[i];
             var spaces = '    ';
+            var condition_exist = translate_condition(output_function, spaces);
 
-            if (output_function.condition()) {
-                _code += '    if (' + translate_logical_expression(output_function.condition()) + ') {\n';
+            if (condition_exist) {
                 spaces += '  ';
             }
             for (var j = 0; j < output_function.bag().outputs().length; ++j) {
@@ -751,7 +766,7 @@ var Translator = function (name, model, generator) {
                     _code += spaces + '}\n';
                 }
             }
-            if (output_functions[i].condition()) {
+            if (condition_exist) {
                 _code += '    }\n';
             }
         }
