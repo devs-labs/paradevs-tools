@@ -132,7 +132,7 @@ exports.grammar = {
             ["< N >", "$$=new yy.SuperModel.IntegerType('N');"],
             ["< Z >", "$$=new yy.SuperModel.IntegerType('Z');"],
             ["( attribute_defs )", "$$=new yy.SuperModel.StructType($2);"],
-            ["[ variable_def ]", "$$=new yy.SuperModel.SetType($2);"],
+            ["[ variable_def ]", "$$=new yy.SuperModel.SetType($2);"]
         ],
         "attribute_defs": [
             ["attribute_defs , attribute_def", "$$ = $1; $1.push($3);"],

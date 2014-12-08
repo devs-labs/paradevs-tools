@@ -463,9 +463,13 @@ var Translator = function (name, model, generator) {
             if (condition_exist) {
                 spaces += '  ';
             }
+            _code += spaces + 'vle::devs::ExternalEventList::const_iterator it = events.begin();\n';
+            _code += spaces + 'while (it != events.end()) {\n';
             for (var j = 0; j < expressions.length; ++j) {
-                translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces);
+                translate_new_state(_model.state().state_variable(j), list[i], list[i].state().state_variable(j), expressions[j], spaces + '  ');
             }
+            _code += spaces + '  ++it;\n';
+            _code += spaces + '}\n';
             if (condition_exist) {
                 _code += '    }\n';
             }
@@ -677,8 +681,6 @@ var Translator = function (name, model, generator) {
                                 _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
                             } else {
                                 declare_variables(transition_function.bag().inputs(), expression, spaces);
-                                _code += spaces + '  vle::devs::ExternalEventList::const_iterator it = events.begin();\n';
-                                _code += spaces + '  while (it != events.end()) {\n';
                                 for (i = 0; i < transition_function.bag().inputs().length; ++i) {
                                     event = transition_function.bag().inputs()[i];
                                     port = _model.in_port(event.port());
@@ -693,8 +695,6 @@ var Translator = function (name, model, generator) {
                                         _code += spaces + '    }\n';
                                     }
                                 }
-                                _code += spaces + '    ++it;\n';
-                                _code += spaces + '  }\n';
                                 _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
                             }
                         } else {
