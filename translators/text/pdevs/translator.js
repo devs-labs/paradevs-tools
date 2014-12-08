@@ -253,33 +253,37 @@ var Translator = function (name, model, generator) {
         var variable;
         var n = state.state_variables().length;
 
-        _super.push('S = { ( ');
-        for (i = 0; i < n; ++i) {
-            variable = state.state_variables()[i];
-            _super.push(variable.name());
-            if (i !== n - 1) {
-                _super.push(', ');
+        if (n > 0) {
+            _super.push('S = { ( ');
+            for (i = 0; i < n; ++i) {
+                variable = state.state_variables()[i];
+                _super.push(variable.name());
+                if (i !== n - 1) {
+                    _super.push(', ');
+                }
             }
-        }
-        _super.push(' ) / ');
-        for (i = 0; i < n; ++i) {
-            variable = state.state_variables()[i];
-            _super.push(variable.name() + ' ' + String.fromCharCode(0x2208) + ' ');
-            _super.translate_type(variable.type());
-            if (i !== n - 1) {
-                _super.push(', ');
+            _super.push(' ) / ');
+            for (i = 0; i < n; ++i) {
+                variable = state.state_variables()[i];
+                _super.push(variable.name() + ' ' + String.fromCharCode(0x2208) + ' ');
+                _super.translate_type(variable.type());
+                if (i !== n - 1) {
+                    _super.push(', ');
+                }
             }
-        }
-        _super.push(' }\n');
-        _super.push('S0 = ( ');
-        for (i = 0; i < n; ++i) {
-            variable = state.state_variables()[i];
-            _super.translate_arithmetic_expression(variable.init());
-            if (i !== n - 1) {
-                _super.push(', ');
+            _super.push(' }\n');
+            _super.push('S0 = ( ');
+            for (i = 0; i < n; ++i) {
+                variable = state.state_variables()[i];
+                _super.translate_arithmetic_expression(variable.init());
+                if (i !== n - 1) {
+                    _super.push(', ');
+                }
             }
+            _super.push(' )\n');
+        } else {
+            _super.push('S = { }\n');
         }
-        _super.push(' )\n');
     };
 
     var translate_state_vector = function (state) {
