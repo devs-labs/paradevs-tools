@@ -1,0 +1,12 @@
+{
+  "name": "Processor",
+  "root": "processor.atomic",
+  "formalism": "pdevs",
+  "target": "vle",
+  "output": "./output",
+  "extras": {
+    "duration": "10",
+    "begin": "0",
+    "seed": "9839884"
+  }
+}

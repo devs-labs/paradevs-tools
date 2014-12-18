@@ -201,14 +201,17 @@ var Translator = function (name, model, generator) {
         '  virtual ~' + _model.name() + '()\n' +
         '  { }\n\n';
 
-        _code += '  virtual void internalTransition(const vle::devs::Time& /* t */)\n' +
+        _code += '  virtual void internalTransition(const vle::devs::Time& t)\n' +
         '  {\n';
         translate_delta_int();
-        _code += '  }\n\n' +
+        _code += '    lastTime = t;\n' +
+        '  }\n\n' +
         '  virtual void externalTransition(const vle::devs::ExternalEventList& events, const vle::devs::Time& t)\n' +
-        '  {\n';
+        '  {\n' +
+        '    double e = lastTime - t;\n\n'
         translate_delta_ext();
-        _code += '  }\n\n' +
+        _code += '    lastTime = t;\n' +
+        '  }\n\n' +
         '  virtual void confluentTransitions(const vle::devs::Time& t, const vle::devs::ExternalEventList& events)\n' +
         '  {\n';
         translate_delta_conf();
@@ -226,7 +229,8 @@ var Translator = function (name, model, generator) {
         '  {\n';
         translate_output();
         _code += '  }\n';
-        _code += '\nprivate:\n';
+        _code += '\nprivate:\n' +
+        '  double lastTime;\n';
         translate_enum_table();
         translate_struct_table();
         translate_state();
@@ -241,7 +245,8 @@ var Translator = function (name, model, generator) {
             return true;
         } else {
             for (var i = 0; i < _model.state().size(); ++i) {
-                if (!(transition_function.state().state_variable(i) instanceof Expression.Variable)) {
+                if (!(transition_function.state().state_variable(i) instanceof Expression.Variable ||
+                    transition_function.state().state_variable(i) instanceof Expression.SetVariable)) {
                     _code += spaces + 'if (' + _model.state().state_variable(i).name() + ' == ' +
                     translate_arithmetic_expression(transition_function.state().state_variable(i)) + ') {\n';
                     return true;
@@ -276,7 +281,7 @@ var Translator = function (name, model, generator) {
             '<model name="Top model" type="coupled" />' +
             '</structures>' +
             '<dynamics></dynamics>' +
-            '<experiment name="exp" seed="9928947">' +
+            '<experiment name="exp">' +
             '<conditions />' +
             '<views> ' +
             '<outputs />' +
@@ -327,7 +332,7 @@ var Translator = function (name, model, generator) {
         translate_extras(extras, project_node, xmlDoc);
     };
 
-    var translate_extras = function(extras, project_node, xmlDoc) {
+    var translate_extras = function (extras, project_node, xmlDoc) {
         var experiment_node = project_node.childNodes()[2];
         var conditions_node = experiment_node.childNodes()[0];
         var condition_node = new libxmljs.Element(xmlDoc, 'condition');
@@ -336,13 +341,14 @@ var Translator = function (name, model, generator) {
         var begin_port_node = new libxmljs.Element(xmlDoc, 'port');
         var begin_value_node = new libxmljs.Element(xmlDoc, 'double', extras.begin);
 
-        duration_port_node.attr({ 'name': 'duration' });
+        experiment_node.attr({"seed": extras.seed});
+        duration_port_node.attr({'name': 'duration'});
         duration_port_node.addChild(duration_value_node);
-        begin_port_node.attr({ 'name': 'begin' });
+        begin_port_node.attr({'name': 'begin'});
         begin_port_node.addChild(begin_value_node);
         condition_node.addChild(duration_port_node);
         condition_node.addChild(begin_port_node);
-        condition_node.attr({ 'name': 'simulation_engine' });
+        condition_node.attr({'name': 'simulation_engine'});
         conditions_node.addChild(condition_node);
     };
 
@@ -353,7 +359,7 @@ var Translator = function (name, model, generator) {
         var destination_node;
         var connection;
 
-        for(i = 0; i < model.internal_connections().length; ++i) {
+        for (i = 0; i < model.internal_connections().length; ++i) {
             connection_node = new libxmljs.Element(xmlDoc, 'connection');
             origin_node = new libxmljs.Element(xmlDoc, 'origin');
             destination_node = new libxmljs.Element(xmlDoc, 'destination');
@@ -371,7 +377,7 @@ var Translator = function (name, model, generator) {
             connection_node.attr({'type': 'internal'});
             connections_node.addChild(connection_node);
         }
-        for(i = 0; i < model.input_connections().length; ++i) {
+        for (i = 0; i < model.input_connections().length; ++i) {
             connection_node = new libxmljs.Element(xmlDoc, 'connection');
             origin_node = new libxmljs.Element(xmlDoc, 'origin');
             destination_node = new libxmljs.Element(xmlDoc, 'destination');
@@ -389,7 +395,7 @@ var Translator = function (name, model, generator) {
             connection_node.attr({'type': 'input'});
             connections_node.addChild(connection_node);
         }
-        for(i = 0; i < model.output_connections().length; ++i) {
+        for (i = 0; i < model.output_connections().length; ++i) {
             connection_node = new libxmljs.Element(xmlDoc, 'connection');
             origin_node = new libxmljs.Element(xmlDoc, 'origin');
             destination_node = new libxmljs.Element(xmlDoc, 'destination');
@@ -706,11 +712,11 @@ var Translator = function (name, model, generator) {
                             port = _model.in_port(event.port());
                             found = check_variables_in_expression(event.values(), expression);
                             if (found) {
-                                _code += spaces + 'if (events[0]->onPort("' + event.port() + '")) {\n';
+                                _code += spaces + 'if ((*it)->onPort("' + event.port() + '")) {\n';
                                 for (j = 0; j < event.values().length; ++j) {
                                     variable = event.values()[j];
                                     type = get_type(port.types()[j][1]);
-                                    _code += spaces + '  ' + type[0] + ' ' + variable + ' = events[0]->get' + type[1] + 'AttributeValue("' + port.types()[j][0] + '");\n'
+                                    _code += spaces + '  ' + type[0] + ' ' + variable + ' = (*it)->get' + type[1] + 'AttributeValue("' + port.types()[j][0] + '");\n'
                                 }
                                 _code += '\n';
                                 _code += spaces + '  ' + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
@@ -726,6 +732,55 @@ var Translator = function (name, model, generator) {
                     _code += spaces + state_variable_definition.name() + ' = ' + translate_arithmetic_expression(expression) + ';\n';
                 }
             }
+        }
+    };
+
+    var translate_struct_to_map = function (var_name, type, spaces) {
+        _code += spaces + '  vle::value::Map* v = new vle::value::Map();\n\n';
+        for (var j = 0; j < type.size(); ++j) {
+            var field = type.get(j)[0];
+            var field_type = type.get(j)[1];
+
+            if (field_type instanceof Model.RealType) {
+                _code += spaces + '  v->add("' + field + '", new vle::value::Double(' + var_name + '.' + field + '));\n';
+            } else if (field_type instanceof Model.IntegerType) {
+                _code += spaces + '  v->add("' + field + '", new vle::value::Integer(' + var_name + '.' + field + '));\n';
+            }
+        }
+    };
+
+    var translate_attribute = function (attribute, spaces) {
+        var name = attribute[0];
+        var expression = attribute[1];
+        var type = expression.type();
+
+        if (type instanceof Model.RealType || type instanceof Model.IntegerType || type === null) {
+            _code += spaces + '  ee << vle::devs::attribute(';
+            _code += '"' + name + '", ';
+            _code += translate_arithmetic_expression(expression);
+            _code += ');\n'
+        } else if (type instanceof Model.StructType) {
+            var var_name = expression.get(1).name();
+
+            if (expression.get(1) instanceof Expression.SetVariable) { // q.first or q.last or q[i]
+                var var_position = expression.get(1).position();
+                var struct_type = _model.struct_table()[var_name];
+                var index;
+
+                if (var_position === 'first') {
+                    index = '[0]';
+                } else { // var_position === 'last'
+                    index = '[' + var_name + '.length - 1]';
+                }
+                translate_struct_to_map(var_name + index, type, spaces);
+                _code += spaces + '  ee << vle::devs::attribute("' + name + '", v);\n';
+            } else { // variable
+                translate_struct_to_map(var_name, type, spaces);
+            }
+        } else if (type instanceof Model.SetType) {
+            // TODO
+        } else {
+            // TODO
         }
     };
 
@@ -754,17 +809,7 @@ var Translator = function (name, model, generator) {
                     _code += spaces + '{\n';
                     _code += spaces + '  vle::devs::ExternalEvent* ee = new vle::devs::ExternalEvent("' + port + '");\n\n';
                     for (var k = 0; k < attributes.length; ++k) {
-                        var attribute_type = attributes[k][1].type();
-
-                        _code += spaces + '  ee << vle::devs::attribute(';
-                        _code += '"' + attributes[k][0] + '", ';
-                        if (attribute_type instanceof Model.RealType || attribute_type instanceof Model.IntegerType || attribute_type === null) {
-                            _code += translate_arithmetic_expression(attributes[k][1]);
-                        } else {
-                            // TODO
-                            _code += '???';
-                        }
-                        _code += ');\n'
+                        translate_attribute(attributes[k], spaces);
                     }
                     _code += spaces + '  output.push_back(ee);\n';
                     _code += spaces + '}\n';
@@ -805,15 +850,15 @@ var Translator = function (name, model, generator) {
         var type;
 
         for (var i = 0; i < transition_function.bag().inputs().length; ++i) {
-            _code += spaces + 'if (event.onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
+            _code += spaces + 'if ((*it)->onPort("' + transition_function.bag().inputs()[i].port() + '")) {\n';
 
             if (transition_function.bag().inputs()[i].values()[0] instanceof Array) {
                 type = get_type(state_variable_definition.type().type());
                 _code += spaces + '  const vle::value::Set* set = dynamic_cast < const vle::value::Set* >' +
-                '(events[0]->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
+                '(&(*it)->getAttributeValue("' + transition_function.bag().inputs()[i].values()[0][0] + '"));\n\n';
                 _code += spaces + '  for (unsigned int i = 0; i < set->size(); ++i) {\n';
                 if (type[0] === 'map') {
-                    translate_map_to_struct(transition_function.bag().inputs()[i].port(), 'vle::value::toMap(set->get(i));\n', spaces);
+                    translate_map_to_struct(transition_function.bag().inputs()[i].port(), '*vle::value::toMapValue(set->get(i));\n', spaces);
                 } else {
                     _code += spaces + '    ' + type[0] + ' value = vle::value::to' + type[1] + '(set->get(i));\n';
                 }

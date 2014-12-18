@@ -32,8 +32,7 @@ delta_int: {
 
 delta_ext: {
   (((passive, sigma, q, z), e), {(in,{[v]})}) -> (busy, processing_time, q, z),
-  (((busy, sigma, q, z), e), {(in,{[v]})}) -> (busy, sigma - e, push(q, [v]), z),
-  (((busy, sigma, q, z), e), {(in,{v1, v2})}) -> (busy, sigma - e, push(q, v), z)
+  (((busy, sigma, q, z), e), {(in,{[v]})}) -> (busy, sigma - e, push(q, [v]), z)
 }
 
 delta_conf: {
@@ -45,5 +44,5 @@ ta: {
 }
 
 output: {
-  (phase, sigma, q.first, z) -> {(out, {(out,q.first)})}
+  (phase, sigma, q.first, z) -> {(out, {(out, q.first)})}
 }
