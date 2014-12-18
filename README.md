@@ -23,5 +23,5 @@ Execution
 ---------
 
 ```bash
-$ node generator.js example/pdevs/project.json
+$ node generator.js example/pdevs/example.project
 ```
