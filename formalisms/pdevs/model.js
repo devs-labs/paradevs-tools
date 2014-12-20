@@ -197,12 +197,24 @@ var AtomicModel = function (name) {
         return _delta_conf_functions;
     };
 
+    this.delta_conf_function = function (index) {
+        return _delta_conf_functions[index];
+    };
+
     this.delta_ext_functions = function () {
         return _delta_ext_functions;
     };
 
+    this.delta_ext_function = function (index) {
+        return _delta_ext_functions[index];
+    };
+
     this.delta_int_functions = function () {
         return _delta_int_functions;
+    };
+
+    this.delta_int_function = function (index) {
+        return _delta_int_functions[index];
     };
 
     this.enum_table = function () {
@@ -283,6 +295,10 @@ var AtomicModel = function (name) {
         return _output_functions;
     };
 
+    this.output_function = function (index) {
+        return _output_functions[index];
+    };
+
     this.parameters = function () {
         return _parameters;
     };
@@ -307,6 +323,10 @@ var AtomicModel = function (name) {
 
     this.ta_functions = function () {
         return _ta_functions;
+    };
+
+    this.ta_function = function (index) {
+        return _ta_functions[index];
     };
 
     this.type = function (t) {
