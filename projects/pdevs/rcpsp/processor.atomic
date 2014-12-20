@@ -1,0 +1,46 @@
+name : Processor;
+
+parameters : { }
+
+in_ports: {
+  in = {}
+}
+
+out_ports: {
+  out = {}
+}
+
+state: {
+  phase = { IDLE, RUNNING, DONE },
+  sigma = <R+>,
+  Done = [ (id = <N>, d = <R+>) ],
+  Running =[ (id = <N>, d = <R+>) ]
+}
+
+init: {
+  phase = IDLE,
+  sigma = +inf,
+  Done = empty_set,
+  Running = empty_set
+}
+
+delta_int: {
+  (RUNNING, sigma, Done, Running) -> (DONE, sigma, Done \/ S, Running - S) / S = { a / a in Running & a.d = sigma } [Running <> empty_set]
+  !!exception [default]
+}
+
+delta_ext: {
+  (((IDLE, sigma, Done, Running), e), {(in,{a})}) -> (RUNNING, sigma, Done, Running \/ {(a.id, 10)})
+}
+
+delta_conf: { }
+
+ta: {
+  (IDLE, sigma, Done, Running) -> +inf,
+  (RUNNING, sigma, Done, Running) -> sigma,
+  (DONE, sigma, Done, Running) -> 0
+}
+
+output: {
+  (DONE, sigma, Done, Running) -> {(out, {})}
+}

@@ -66,6 +66,8 @@ exports.grammar = {
             ["\\*", "return '*';"],
             ["\\^", "return 'POW';"],
             ["\\/", "return '/';"],
+            ["\\\ \\/", "return 'UNION';"],
+            ["\\/ \\\ ", "return 'INTERSECTION';"],
             ["<>", "return '<>';"],
             ["\\(", "return '(';"],
             ["\\)", "return ')';"],
@@ -88,7 +90,7 @@ exports.grammar = {
     "tokens": "SECTION_NAME SECTION_IN_PORTS SECTION_OUT_PORTS SECTION_PARAMETERS SECTION_STATE SECTION_INIT SECTION_DELTA_INT SECTION_DELTA_EXT SECTION_DELTA_CONF SECTION_TA SECTION_OUTPUT " +
     "; . : { } [ ] -> ( ) + - * / , = _ ID INTEGER REAL INFINITY DEFAULT " +
     "SIN COS TAN COTAN ASIN ACOS ATAN SINH COSH TANH COTANH ASINH ACOSH ATANH " +
-    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH UNIFORM EMPTY_SET" +
+    "EXP LN LOG POW, SQRT ABS BAR MAX MIN PUSH UNIFORM EMPTY_SET UNION INTERSECTION " +
     "OR AND NOT <> < > <= >= " +
     "FIRST LAST",
     "start": "model",
@@ -224,7 +226,8 @@ exports.grammar = {
             ["arithmetic_expression", "$$=[$1];"]
         ],
         "arithmetic_expression": [
-            ["additive_expression", "$$=new yy.Expression.ArithmeticExpression($1)"]
+            ["additive_expression", "$$=new yy.Expression.ArithmeticExpression($1)"],
+            ["set_expression", "$$=new yy.Expression.ArithmeticExpression($1)"]
         ],
         "additive_expression": [
             ["multiplicative_expression", "$$=$1;"],
@@ -262,10 +265,7 @@ exports.grammar = {
             ["INTEGER", "$$=new yy.Expression.Integer(Number(yytext));"],
             ["REAL", "$$=new yy.Expression.Real(Number(yytext));"],
             ["INFINITY", "$$=new yy.Expression.Infinity();"],
-            ["ID", "$$=new yy.Expression.Variable($1, yy.model.is_state_variable($1) ? yy.model.state_variable_type($1) : null);"],
-            ["[ elements ]", "$$=new yy.Expression.Set($2);"],
-            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3, yy.model.state_variable_type($1));"],
-            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
+            ["ID", "$$=new yy.Expression.Variable($1, yy.model.is_state_variable($1) ? yy.model.state_variable_type($1) : null);"]
         ],
         "elements": [
             ["elements , element", "$$=$1; $1.push($3);"],
@@ -276,7 +276,20 @@ exports.grammar = {
             ["REAL", "$$=new yy.Expression.Real(Number($1));"],
             ["ID", "$$=new yy.Expression.Variable($1,null);"]
         ],
-        "condition": [["[ conditional_expression ]", "$$=$2"]],
+        "set_expression": [
+            ["set_litteral", "$$=$1;"],
+            ["set_litteral - set_litteral", "$$=$1;"],
+            ["set_litteral UNION set_litteral", "$$=$1;"],
+            ["set_litteral INTERSECTION set_litteral", "$$=$1;"]
+        ],
+        "set_litteral": [
+            ["[ elements ]", "$$=new yy.Expression.Set($2);"],
+            ["ID . position", "$$=new yy.Expression.SetVariable($1, $3, yy.model.state_variable_type($1));"],
+            ["EMPTY_SET", "$$=new yy.Expression.EmptySet();"]
+        ],
+        "condition": [
+            ["[ conditional_expression ]", "$$=$2"]
+        ],
         "conditional_expression": [
             ["DEFAULT", "$$=new yy.Expression.ConditionalExpression(new yy.Expression.Default());"],
             ["disjunction_expression", "$$=new yy.Expression.ConditionalExpression($1);"]
